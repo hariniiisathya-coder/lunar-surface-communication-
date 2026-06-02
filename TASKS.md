@@ -46,8 +46,9 @@ Read in order:
 3. **Modern loss tangent** — Siegler et al. (2020), Sections 1–3 and Figure 4.
    Open access: https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020JE006405
 
-4. **Baseline to beat** — Toonen et al. (2021) IEEE Aerospace, doi:10.1109/AERO50100.2021.9438395.
-   Read only for Figure 4 (received power vs distance). This is what you improve on.
+4. **Baseline to beat** — Toonen (2021) IEEE WiSEE, NTRS 20210022647.
+   Open access: https://ntrs.nasa.gov/citations/20210022647
+   Read for the multipath fade-loss maps at the south pole. This is what you improve on.
 
 5. **What you need to improve** — Edwards et al. (2023) NTRS 20220015268, Table III and IV.
    Note: uses εr=3.0, tan δ=0, no terrain. You will fix all three.

@@ -34,11 +34,11 @@ Parsons, J. D. (2000). The Mobile Radio Propagation Channel, 2nd ed.
 
 Baseline comparison
 --------------------
-Toonen et al. (2021), "Lunar Surface Communications Network Design,"
-    IEEE Aerospace Conference, doi:10.1109/AERO50100.2021.9438395.
-    Uses εᵣ = 3.0 (constant, no loss tangent). No terrain.
-    → Reproduce their Fig. 4 (received power vs distance, S-band) as
-      a baseline, then show the improvement from spatially varying εᵣ.
+Toonen (2021), "Optimizing Lunar Map Partitioning for Multipath Fade Loss
+    Estimation at Lunar South Pole," IEEE WiSEE. NTRS 20210022647.
+    https://ntrs.nasa.gov/citations/20210022647
+    Uses ray-tracing over LOLA DEM with constant εᵣ.
+    → Compare your two-ray fade-loss maps against their south-pole maps.
 
 Edwards et al. (2023), NTRS 20220015268, uses Friis only (no two-ray).
     → Quantify two-ray correction at 2, 5, 10 km for h_BTS = 30 m, h_UE = 2 m.

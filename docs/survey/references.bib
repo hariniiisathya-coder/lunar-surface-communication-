@@ -19,7 +19,7 @@
   year      = {1975},
   volume    = {24},
   pages     = {394--408},
-  doi       = {10.1016/0012-821X(75)90102-2},
+  doi       = {10.1016/0012-821X(75)90146-6},
   note      = {Open access via NASA ADS. Canonical formula: eps\_prime = 1.919\^{}rho.}
 }
 
@@ -40,8 +40,8 @@
                and Andrews-Hanna, Jeffrey C. and Asmar, Sami W. and Bills, Bruce G.
                and de Pater, Imke and Elphic, Richard C. and Ghent, Rebecca R.
                and Lawrence, David J. and others},
-  title     = {Remote Sensing of Lunar Regolith Bulk Density: Developing
-               a Global Lunar Bulk Density Map from {LRO} {Diviner} Radiometry},
+  title     = {Lunar Titanium and Frequency-Dependent Microwave Loss Tangent
+               From the {Diviner} Lunar Radiometer Experiment},
   journal   = {Journal of Geophysical Research: Planets},
   year      = {2020},
   volume    = {125},
@@ -64,17 +64,18 @@
 % LUNAR DEM AND TERRAIN
 % =============================================================================
 
-@article{barker2016,
+@article{barker2021,
   author    = {Barker, Michael K. and Mazarico, Erwan and Neumann, Gregory A.
-               and Zuber, Maria T. and Haruyama, Junichi and Smith, David E.},
-  title     = {A new lunar digital elevation model from the {Lunar Orbiter Laser Altimeter}
-               and {SELENE Terrain Camera}},
-  journal   = {Icarus},
-  year      = {2016},
-  volume    = {273},
-  pages     = {346--355},
-  doi       = {10.1016/j.icarus.2016.02.008},
-  note      = {PGDA Product 78 reference. 5~m/pixel south-pole DEM.}
+               and Zuber, Maria T. and Torrence, Mark H. and others},
+  title     = {Improved {LOLA} Elevation Maps for South Pole Landing Sites:
+               Error Estimates and Their Impact on Illumination Conditions},
+  journal   = {Planetary and Space Science},
+  year      = {2021},
+  volume    = {203},
+  pages     = {105119},
+  doi       = {10.1016/j.pss.2020.105119},
+  note      = {Official data usage policy citation for PGDA Product 78.
+               5~m/pixel south-pole DEMs (Site01 = Shackleton region).}
 }
 
 @article{barker2025,
@@ -144,22 +145,26 @@
   note        = {Section~4.1: knife-edge (eq.~14). Section~4.2.2: Deygout.}
 }
 
-@article{toonen2021,
-  author    = {Toonen, Jonathan and Schaire, Scott H. and Hudiburg, John J. and others},
-  title     = {Lunar Surface Communications Network Design},
-  booktitle = {Proc. IEEE Aerospace Conference},
+@inproceedings{toonen2021,
+  author    = {Toonen, Jonathan},
+  title     = {Optimizing Lunar Map Partitioning for Multipath Fade Loss Estimation
+               at Lunar South Pole},
+  booktitle = {Proc. IEEE International Conference on Wireless for Space and
+               Extreme Environments (WiSEE)},
   year      = {2021},
-  doi       = {10.1109/AERO50100.2021.9438395},
-  note      = {Baseline coverage map at lunar south pole. Uses eps\_r=3.0, no terrain.
-               Figure~4: received power vs distance.}
+  url       = {https://ntrs.nasa.gov/citations/20210022647},
+  note      = {NTRS 20210022647. Multipath fade loss maps at lunar south pole
+               using ray-tracing over LOLA DEM. Baseline for S1 propagation track.}
 }
 
-@article{jun2025,
-  author    = {Jun, Jihoon and others},
-  title     = {RF coverage map for lunar surface communications},
-  journal   = {IEEE Access},
+@inproceedings{jun2025,
+  author    = {Jun, William W. and others},
+  title     = {A Rapid, Low-Cost Path to Lunar Communication and Navigation},
+  booktitle = {Proc. IEEE Aerospace Conference},
   year      = {2025},
-  note      = {Adds terrain diffraction over LOLA profiles. Equatorial links.}
+  doi       = {10.1109/AERO63441.2025.11068684},
+  url       = {https://www-robotics.jpl.nasa.gov/media/documents/A_Rapid_Low-Cost_Path_to_Lunar_Communication_and_Navigation.pdf},
+  note      = {JPL LunaNet architecture. Small-sat relay concepts for lunar south pole.}
 }
 
 % =============================================================================
@@ -213,7 +218,7 @@
 
 @techreport{edwards2023,
   author      = {Edwards, Charles D. and Bundick, Steve and others},
-  title       = {Leveraging {LTE/5G} Cellular Architecture for Lunar Surface Communications},
+  title       = {3GPP Telecommunications Technology on the Moon},
   institution = {NASA Jet Propulsion Laboratory},
   type        = {NASA Technical Reports Server},
   number      = {NTRS 20220015268},
@@ -318,16 +323,16 @@
                Section~4.2: Kepler's equation. Available at archive.org.}
 }
 
-@article{iiyama2023,
+@inproceedings{iiyama2023,
   author    = {Iiyama, Keidai and Kruger, John and D'Amico, Simone},
-  title     = {Autonomous Distributed Lunar Navigation and Communication with a
-               Small Satellite Constellation},
-  journal   = {Navigation},
+  title     = {Autonomous Distributed Angles-Only Navigation and Timekeeping
+               in Lunar Orbit},
+  booktitle = {Proc. 36th International Technical Meeting of the Satellite Division
+               of the Institute of Navigation (ION ITM 2023)},
   year      = {2023},
-  volume    = {70},
-  number    = {1},
-  doi       = {10.33012/navi.560},
-  note      = {ELFO constellation elevation statistics at south pole. Fig.~3.}
+  url       = {https://www.ion.org/publications/abstract.cfm?articleID=18207},
+  note      = {ELFO constellation elevation statistics at south pole.
+               Angles-only relative navigation between small satellites.}
 }
 
 % =============================================================================
