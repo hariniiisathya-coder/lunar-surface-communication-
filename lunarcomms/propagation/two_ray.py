@@ -34,11 +34,10 @@ Parsons, J. D. (2000). The Mobile Radio Propagation Channel, 2nd ed.
 
 Baseline comparison
 --------------------
-Toonen (2021), "Optimizing Lunar Map Partitioning for Multipath Fade Loss
-    Estimation at Lunar South Pole," IEEE WiSEE. NTRS 20210022647.
-    https://ntrs.nasa.gov/citations/20210022647
-    Uses ray-tracing over LOLA DEM with constant εᵣ.
-    → Compare your two-ray fade-loss maps against their south-pole maps.
+Toonen et al. (2022), "Optimizing Lunar Map Partitioning for Multipath Fade Loss
+    Analyses," IEEE J. Radio Freq. Identif., vol. 6, doi:10.1109/JRFID.2022.3159775.
+    Uses Fresnel-zone SBR ray-tracing over LOLA DEM (NASA Glenn).
+    → Compare your two-ray fade-loss maps against their L99% south-pole results.
 
 Edwards et al. (2023), NTRS 20220015268, uses Friis only (no two-ray).
     → Quantify two-ray correction at 2, 5, 10 km for h_BTS = 30 m, h_UE = 2 m.

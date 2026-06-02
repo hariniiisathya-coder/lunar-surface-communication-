@@ -11,7 +11,7 @@ References validated here
 [P525] ITU-R P.525-4 (2019). Free-space attenuation.
 [P526] ITU-R P.526-15 (2019). Propagation by diffraction.
 [R96]  Rappaport (1996), Wireless Communications, Ch. 3. ISBN 0-13-375536-3.
-[T21]  Toonen (2021), IEEE WiSEE. NTRS 20210022647. https://ntrs.nasa.gov/citations/20210022647
+[T22]  Toonen et al. (2022), IEEE J. Radio Freq. Identif., vol. 6. doi:10.1109/JRFID.2022.3159775
 [E23]  Edwards et al. (2023), NTRS 20220015268.
 """
 

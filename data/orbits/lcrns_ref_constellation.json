@@ -57,9 +57,9 @@
       "inclination_deg": 57.7,
       "raan_deg": null,
       "arg_perigee_deg": 90.0,
-      "period_hr": 10.0,
+      "period_hr": 12.0,
       "perilune_altitude_km": 719,
-      "apolune_altitude_km": 7283,
+      "apolune_altitude_km": 8090,
       "source": "https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Lunar_Pathfinder"
     },
     "queqiao2_cnsa": {

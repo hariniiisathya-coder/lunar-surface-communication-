@@ -16,7 +16,7 @@ contribute to the same repository. See `README.md` for the repo structure.
 |-----|----------|
 | 1 | Read NASA Moon Fact Sheet + Wikipedia "Orbit of the Moon". Calculate Earth-Moon delay and radio horizon by hand. |
 | 2 | Open LROC QuickMap ([quickmap.lroc.asu.edu](https://quickmap.lroc.asu.edu)). Identify Connecting Ridge, Shackleton crater, de Gerlache. Write 1-page "what I see" summary. |
-| 3 | Read Edwards et al. (2023) NTRS 20220015268 (LTE/5G for the Moon). Identify the three main simplifying assumptions the paper makes. |
+| 3 | Read Edwards et al. (2023) NTRS 20220015268 ("3GPP Telecommunications Technology on the Moon"). Identify the three main simplifying assumptions the paper makes. |
 | 4 | Install environment: `conda env create -f environment.yml && pip install -e ".[dev]"`. Run `pytest tests/ -v` → all tests should raise `NotImplementedError` (that is expected and correct). |
 | 5 | Draw the shared scenario diagram (see README) on a whiteboard. Each student explains their track to the other two. |
 
@@ -46,9 +46,10 @@ Read in order:
 3. **Modern loss tangent** — Siegler et al. (2020), Sections 1–3 and Figure 4.
    Open access: https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020JE006405
 
-4. **Baseline to beat** — Toonen (2021) IEEE WiSEE, NTRS 20210022647.
-   Open access: https://ntrs.nasa.gov/citations/20210022647
-   Read for the multipath fade-loss maps at the south pole. This is what you improve on.
+4. **Methodology reference** — Toonen et al. (2022) IEEE JRFID, doi:10.1109/JRFID.2022.3159775.
+   Read Sections I-III for context on SBR ray-tracing over LOLA DEM, and Fig. 6 for L99% fade-loss
+   maps at the south pole. This paper optimises ray-tracing efficiency; your two-ray + Deygout model
+   is a simpler analytical complement. Use their L99% maps as a qualitative sanity check.
 
 5. **What you need to improve** — Edwards et al. (2023) NTRS 20220015268, Table III and IV.
    Note: uses εr=3.0, tan δ=0, no terrain. You will fix all three.
@@ -111,7 +112,8 @@ Read in order:
 
 **Steps:**
 1. Implement `friis.fspl_db()`, `received_power_dbm()`, `link_margin_db()`, `max_range_m()`.
-2. Reproduce Edwards (2023) Table III: verify `max_range_m(53, 0, -106, 2.5e9)` ≈ 8.5 km (Friis only).
+2. Reproduce the Friis-only link budget from Edwards (2023) Section IV using the parameters stated in
+   the paper. Check that your `max_range_m()` output matches their stated coverage radius.
 3. Implement `breakpoint_distance()`. Verify the S-band breakpoint is ~2 km.
 4. Implement `two_ray.path_loss_db()` with complex exponentials (not the far-field approximation).
 5. Plot Friis vs two-ray path loss from 100 m to 20 km at S-band (hT=30m, hR=2m).
@@ -162,8 +164,8 @@ Read in order:
 5. Compute key statistics: coverage area (km²) at margin > 0 dB for each band.
 
 **Key result to report:**
-Compare your S-band coverage radius against Edwards (2023) ~7–10 km (Friis only).
-The terrain-aware result should be substantially smaller for typical south-pole morphology.
+Compare your terrain-aware S-band coverage radius against the Friis-only result from Edwards (2023)
+Section IV. The terrain-aware result should be substantially smaller for typical south-pole morphology.
 
 ---
 
@@ -195,7 +197,7 @@ no existing lunar coverage paper includes this.
 1. Introduction — why terrain-aware, uncertainty-quantified lunar coverage matters.
 2. Propagation model — two-ray + Deygout, with lunar regolith physics.
 3. DEM and dielectric data — PGDA-78, Siegler 2020, validation.
-4. Coverage results — 3 bands, comparison with Edwards (2023) and Toonen (2021).
+4. Coverage results — 3 bands, comparison with Edwards (2023) Friis baseline and Toonen et al. (2022) L99% ray-tracing maps.
 5. Uncertainty analysis — Monte Carlo results.
 6. Conclusions.
 
@@ -224,8 +226,8 @@ no existing lunar coverage paper includes this.
    Specifically: Section 6.2 (timing), 6.3 (HARQ), 6.4 (PRACH).
    Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.821/
 
-4. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268.
-   Read Table I (LCRNS band plan) and Sections III–IV (link budget).
+4. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268
+   ("3GPP Telecommunications Technology on the Moon"). Read Sections III-IV (link budget and coverage).
 
 5. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
    (AFS frequency 2492.028 MHz and its proximity to 3GPP SFCGb1 band.)
@@ -239,20 +241,22 @@ no existing lunar coverage paper includes this.
 
 **Steps:**
 1. Read 3GPP TR 38.821, Table 6.1.3-1: LEO-600 reference scenario Doppler ±24 kHz, delay 1.5–5 ms.
-2. For Lunar Pathfinder ELFO (a=5500 km, e=0.60, i=57.7°, ω=90°):
-   - Orbital velocity at perilune: v_peri = √(μ·(2/r_peri − 1/a)) ≈ 2.2 km/s
-   - Orbital velocity at apolune:  v_apo  = √(μ·(2/r_apo − 1/a))  ≈ 0.15 km/s
-3. Compute max Doppler at perilune vs apolune at S-band:
-   - Δf_max = v/c · f_carrier = (2200/3e5) · 2.5e9 ≈ 18.3 kHz  (perilune)
-   - Δf_max = (150/3e5)  · 2.5e9 ≈ 1.25 kHz  (apolune)
-4. One-way delay from surface (south pole) to relay:
-   - At apolune (~7000 km slant range): τ = 7000/3e5 ≈ 23 ms
-   - At perilune (~700 km slant range): τ = 700/3e5 ≈ 2.3 ms
+2. For LCRNS-1 ELFO (a=5500 km, e=0.60, i=57.7°, w=90°, from `data/orbits/lcrns_ref_constellation.json`):
+   - v_peri = sqrt(mu*(1+e)/(a*(1-e))) = sqrt(4902.8*1.6/(5500*0.4)) ≈ 1.89 km/s
+   - v_apo  = sqrt(mu*(1-e)/(a*(1+e))) = sqrt(4902.8*0.4/(5500*1.6)) ≈ 0.47 km/s
+3. With w=90°, apolune is over the south pole — the contact window IS the apolune arc.
+   Max Doppler during the contact window at S-band (2.5 GHz):
+   - Apolune (visible from south pole): Df_max = v_apo/c * f = (470/3e5) * 2.5e9 ≈ 3.9 kHz
+   - Perilune (NOT visible from south pole for w=90°): Df_max ≈ 15.8 kHz — for comparison only.
+4. One-way delay during contact window:
+   - Apolune altitude = a*(1+e) - R_Moon = 8800 - 1737 = 7063 km → tau = 7063/3e5 ≈ 23.5 ms
 5. Compare against 3GPP TR 38.821 LEO-600 baseline. Write a table.
 
-**Key finding:** At apolune (the useful coverage window), Doppler is LOW (~1.25 kHz) and
-delay is HIGH (~23 ms). At perilune, Doppler is HIGH but delay is low. This is opposite
-to LEO where Doppler is always high. 3GPP NTN pre-compensation was designed for the LEO case.
+**Key finding:** During contact windows (satellite near apolune), Doppler is ~3.9 kHz and delay is
+~23.5 ms. The 3.9 kHz Doppler exceeds the 10%-of-SCS threshold for SCS 15 kHz (1.5 kHz) and SCS
+30 kHz (3.0 kHz); SCS 60 kHz (threshold 6.0 kHz) is the minimum viable option. The 23.5 ms
+one-way delay gives HARQ RTT ~47 ms vs the default 4 ms NR value. 3GPP NTN was designed for
+LEO (Doppler always >10 kHz, delay <5 ms); the lunar ELFO regime is fundamentally different.
 
 ---
 
@@ -285,8 +289,10 @@ to LEO where Doppler is always high. 3GPP NTN pre-compensation was designed for 
 2. Analyse per 3GPP TR 38.821, Section 6.2.1:
    - Which subcarrier spacings (SCS 15 / 30 / 60 kHz) can tolerate Δf from Step 1?
    - Rule: acceptable Doppler offset < 10% of SCS (3GPP RAN4 guideline).
-   - At perilune Δf=18.3 kHz: SCS 15 kHz → failure (18.3 > 1.5). SCS 30 kHz → marginal.
-   - At apolune Δf=1.25 kHz: SCS 15 kHz → OK.
+   - During contact window (apolune, Df≈3.9 kHz):
+     SCS 15 kHz → failure (3.9 > 1.5 kHz threshold).
+     SCS 30 kHz → failure (3.9 > 3.0 kHz threshold).
+     SCS 60 kHz → OK (3.9 < 6.0 kHz threshold) — minimum viable SCS for lunar ELFO.
 3. Analyse HARQ RTT:
    - With slant range 7000 km (apolune): RTT = 2 · 23 ms = 46 ms.
    - 3GPP NR default HARQ RTT for TDD = 8 slots = 4 ms @ SCS 15 kHz.
