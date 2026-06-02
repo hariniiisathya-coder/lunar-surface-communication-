@@ -1,4 +1,4 @@
-# Task Breakdown — Lunar Comms Summer Internship 2025
+# Task Breakdown — Lunar Comms Summer Internship 2026
 
 Three students, 8–10 weeks, one shared scenario:
 **a 5G BTS at Connecting Ridge (lunar south pole) + LCRNS/Moonlight relay in ELFO + Earth DSN.**
