@@ -51,8 +51,8 @@ sionna = [
 ]
 
 [project.urls]
-Repository = "https://github.com/YOUR_ORG/lunar-comms-survey"
-Issues     = "https://github.com/YOUR_ORG/lunar-comms-survey/issues"
+Repository = "https://github.com/ebaenamar/lunar-comms-survey"
+Issues     = "https://github.com/ebaenamar/lunar-comms-survey/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -11,8 +11,8 @@ abstract: >
 version: "0.1.0"
 date-released: "2025-06-01"
 license: MIT
-url: "https://github.com/YOUR_ORG/lunar-comms-survey"
-repository-code: "https://github.com/YOUR_ORG/lunar-comms-survey"
+url: "https://github.com/ebaenamar/lunar-comms-survey"
+repository-code: "https://github.com/ebaenamar/lunar-comms-survey"
 keywords:
   - lunar communications
   - 5G NTN

@@ -2,7 +2,7 @@
 
 **A living survey and open-source toolchain for lunar wireless communications.**
 
-[![CI](https://github.com/YOUR_ORG/lunar-comms-survey/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/lunar-comms-survey/actions)
+[![CI](https://github.com/ebaenamar/lunar-comms-survey/actions/workflows/ci.yml/badge.svg)](https://github.com/ebaenamar/lunar-comms-survey/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
@@ -140,7 +140,7 @@ lunar-comms-survey/
 ### Install
 
 ```bash
-git clone https://github.com/YOUR_ORG/lunar-comms-survey.git
+git clone https://github.com/ebaenamar/lunar-comms-survey.git
 cd lunar-comms-survey
 pip install -e ".[dev]"
 ```
