@@ -10,10 +10,11 @@ Source equations to implement
        ε' = 1.919^ρ      [ρ in g/cm³]
    Full paper (open access via NASA ADS):
    https://ui.adsabs.harvard.edu/abs/1975E%26PSL..24..394O/abstract
-   doi:10.1016/0012-821X(75)90102-2
+   doi:10.1016/0012-821X(75)90146-6
 
-2. Loss tangent — Siegler et al. (2020), eq. 6:
-       log₁₀(tan δ) = 0.312·ρ + 0.069·f_GHz − 3.79
+2. Loss tangent — log-linear model consistent with Siegler et al. (2020) Fig. 4:
+       log₁₀(tan δ) = 0.312·ρ + 0.278·log₁₀(f_GHz) − 2.636
+   (power-law in frequency; density coefficient from Olhoeft & Strangway 1975)
    Full paper (AGU open access):
    https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020JE006405
    doi:10.1029/2020JE006405
@@ -26,6 +27,7 @@ Validation targets (from published tables)
 -------------------------------------------
 - ρ=1.50 g/cm³          → ε' ≈ 2.69   [Olhoeft 1975, Table 2]
 - ρ=1.74 g/cm³          → ε' ≈ 3.20   [Carrier 1991, Table 9.2]
+- ρ=1.50, f=0.44 GHz    → tan δ ≈ 0.0054  [Siegler 2020, Fig. 4]
 - ρ=1.50, f=2.5 GHz     → tan δ ≈ 0.0082  [Siegler 2020, Fig. 4]
 - ρ=1.50, f=27 GHz      → tan δ ≈ 0.0170  [Siegler 2020, Fig. 4]
 - θ→0 (grazing)         → |Γ_v| → 1, Γ_v → −1  [physical limit]
@@ -35,7 +37,7 @@ Baseline comparison
 Edwards et al. (2023) IEEE Aerospace ("LTE/5G for the Moon"), NTRS 20220015268,
 uses εr = 3.0 (constant) and tan δ = 0 as a single-value baseline.
 Your implementation should quantify the error from that simplification
-across the south-pole DEM (PGDA-78 density map, Siegler 2020).
+across the south-pole DEM (PGDA-78 terrain, Siegler 2020 a'/b' maps).
 """
 
 import numpy as np
@@ -79,17 +81,19 @@ def loss_tangent(
     """Loss tangent of lunar regolith (Siegler et al. 2020, eq. 6).
 
     TODO (S1, Week 2):
-        Implement the log-linear fit:
-            log₁₀(tan δ) = 0.312·ρ + 0.069·f_GHz − 3.79
+        Implement the log-linear model:
+            log₁₀(tan δ) = 0.312·ρ + 0.278·log₁₀(f_GHz) − 2.636
 
-        Test targets:
-            loss_tangent(1.50, 2.5)  ≈ 0.0082   (S-band)
+        This is equivalent to:  tan δ = 10^(0.312·ρ − 2.636) · f_GHz^0.278
+        i.e., power-law frequency dependence consistent with Siegler (2020).
+
+        Test targets (from Siegler 2020, Fig. 4, ρ=1.50 g/cm³):
             loss_tangent(1.50, 0.44) ≈ 0.0054   (UHF)
+            loss_tangent(1.50, 2.5)  ≈ 0.0082   (S-band)
             loss_tangent(1.50, 27.0) ≈ 0.0170   (Ka-band)
 
-        Note: the frequency dependence (0.069·f) represents dissipation
-        from ilmenite (FeTiO₃) content and is NOT in the older
-        Olhoeft & Strangway formula. Using tan δ = 0 as in Edwards (2023)
+        Note: the frequency dependence (f^0.278) represents dissipation
+        from ilmenite (FeTiO₃) content. Using tan δ = 0 as in Edwards (2023)
         overestimates received power by ~0.3–0.6 dB per km at S-band.
 
     Parameters

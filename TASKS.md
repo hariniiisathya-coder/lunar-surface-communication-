@@ -550,7 +550,7 @@ This is the end-to-end demonstration that connects all three tracks into a singl
 | 2 | Implement Friis + two-ray + diffraction | S1 | W3–4 |
 | 3 | Implement horizon raycasting (vectorised) | S1 | W4 |
 | 4 | Implement `compute_coverage_map()` + GeoTIFF output | S1 | W5–6 |
-| 5 | Implement `load_dem()` + `extract_profile()` + `sample_density()` | S1 | W2–5 |
+| 5 | Implement `load_dem()` + `extract_profile()` + `sample_loss_tangent_params()` | S1 | W2–7 |
 | 6 | Implement `keplerian_state()` + Kepler equation solver | S2/S3 | W3 |
 | 7 | Implement `propagate_elfo()` + `south_pole_elevation_deg()` | S2/S3 | W3 |
 | 8 | Implement `load_lcrns_elements()` + `coverage_fraction()` | S2/S3 | W4 |

@@ -113,8 +113,8 @@ def path_loss_db(
                 path_loss_db ≈ fspl_db(100, 2.5e9)  ± 6 dB  (oscillations)
             At d >> breakpoint (10 km), same geometry:
                 path_loss_db ≈ fspl_db(10000, 2.5e9) + ~20 dB  (1/d⁴ penalty)
-            Baseline check: reproduce Toonen et al. (2021) Fig. 4 within ±3 dB
-                using rho=1.50 (εᵣ≈2.69) vs their εᵣ=3.0.
+            Baseline check: compare against Toonen et al. (2022) L99% fade-loss
+                maps (Fig. 6) using rho=1.50 (εᵣ≈2.69) for qualitative sanity.
 
     Parameters
     ----------
@@ -146,37 +146,43 @@ def path_loss_spatial_db(
     h_tx_m: float,
     h_rx_m: float,
     freq_hz: float,
-    rho_map: np.ndarray,
+    a_prime_map: np.ndarray,
+    b_prime_map: np.ndarray,
+    rho: float = 1.50,
     reflection_point_fraction: float = 0.5,
 ) -> float | np.ndarray:
-    """Two-ray path loss with spatially varying regolith density.
+    """Two-ray path loss with spatially varying loss tangent (Siegler 2020).
 
-    TODO (S1, Week 5 — stretch goal):
-        Same as path_loss_db() but rho_map is a 1-D array of bulk density
-        values sampled along the path at the specular reflection point.
+    TODO (S1, Week 7):
+        Same as path_loss_db() but tan_delta varies spatially using the
+        Siegler (2020) a' and b' maps at the specular reflection point:
+            tan_delta = a_prime * (freq_hz / 1e9) ** b_prime
 
         The specular reflection point is at fraction:
             x_spec / d = hₜ / (hₜ + hᵣ)   [flat-Earth approximation]
 
         For a 5 km path with hₜ=30m, hᵣ=2m: x_spec ≈ 4.69 km from Tx.
 
-        This is where PGDA-78 density data feeds into the propagation model,
-        creating the spatially variable coverage map (deliverable of Track S1).
+        Use lunarcomms.io.pgda.sample_loss_tangent_params() to extract
+        a_prime and b_prime from the Siegler 2020 Zenodo files.
 
         Baseline: compare against path_loss_db() with constant rho=1.50
-        to quantify the coverage-map error from using a single density.
+        to quantify the error from a global average loss tangent.
 
     Parameters
     ----------
-    rho_map : ndarray, shape (N,)
-        Bulk density at the specular reflection point for each distance in
-        distance_m. Use lunarcomms.io.pgda.sample_density() to extract from
-        PGDA-78 + Siegler 2020 density raster.
+    a_prime_map : ndarray, shape (N,)
+        Loss-tangent constant a' at the specular reflection point for each
+        distance. From lunarcomms.io.pgda.sample_loss_tangent_params().
+    b_prime_map : ndarray, shape (N,)
+        Loss-tangent exponent b' at the specular reflection point.
+    rho : float
+        Bulk density for permittivity ε' = 1.919^rho (constant, default 1.50).
     reflection_point_fraction : float
         Fraction along the path where specular reflection occurs.
         Default 0.5 assumes equal heights (approximate).
     """
     raise NotImplementedError(
-        "TODO (S1, Week 5): implement spatially varying two-ray model. "
-        "Feed PGDA-78 density values at specular reflection point."
+        "TODO (S1, Week 7): implement spatially varying two-ray model. "
+        "Use sample_loss_tangent_params() for a', b' at specular point."
     )

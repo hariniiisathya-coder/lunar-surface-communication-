@@ -7,7 +7,7 @@ A passing test suite means your implementation matches the published literature.
 References validated here
 --------------------------
 [O75]  Olhoeft & Strangway (1975), Earth Planet. Sci. Lett. 24, 394–408.
-       doi:10.1016/0012-821X(75)90102-2
+       doi:10.1016/0012-821X(75)90146-6
 [C91]  Carrier, Olhoeft & Mendell (1991), Lunar Sourcebook, Ch. 9.
        Table 9.1 (density), Table 9.2 (permittivity).
 [S20]  Siegler et al. (2020), JGR Planets 125, e2020JE006405.
@@ -74,7 +74,7 @@ class TestLossTangent:
         result = dielectric.loss_tangent(1.50, 2.5)
         assert abs(result - 0.0082) < 0.0008, (
             f"Expected tan δ ≈ 0.0082 at S-band, got {result:.5f}. "
-            "Check: 10^(0.312*1.50 + 0.069*2.5 - 3.79)"
+            "Check: 10^(0.312*1.50 + 0.278*log10(2.5) - 2.636)"
         )
 
     def test_uhf(self):
@@ -97,7 +97,7 @@ class TestLossTangent:
         tans = dielectric.loss_tangent(1.50, freqs)
         assert np.all(np.diff(tans) > 0), (
             "Loss tangent must increase with frequency. "
-            "Check the sign of the 0.069·f_GHz term."
+            "Check the sign of the 0.278·log10(f_GHz) term."
         )
 
     def test_density_dependence(self):
