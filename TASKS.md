@@ -373,8 +373,8 @@ the surface→relay dimension to your analysis.
 2. **Contact Graph Routing** — CCSDS 734.3-B-1 (SABR), Sections 1–4.
    Free download: https://public.ccsds.org/Pubs/734x3b1.pdf
 
-3. **ION-DTN tutorial** — NASA NTRS 20180003067 (ION overview).
-   https://ntrs.nasa.gov/citations/20180003067
+3. **ION-DTN tutorial** — NASA NTRS 20190034046 (ION Developer Course Materials).
+   https://ntrs.nasa.gov/citations/20190034046
 
 4. **DSNS simulator** — Read the paper: ssloxford/DSNS on arXiv: 2508.04317.
    Then install: `pip install dsns` (if published) or clone from https://github.com/ssloxford/DSNS
@@ -473,8 +473,8 @@ for any DTN researcher studying lunar scenarios. Commit this file to the repo.
 1. Add a Mars relay node to the contact plan:
    - Earth-Mars one-way light time: 3–22 min (varies with orbital phase).
    - Mars DSN window: 8 h/day (approximate for a single ground station).
-   - Use poliastro to compute Earth-Mars distance for a 2026 conjunction scenario:
-     `pip install poliastro`
+   - Use hapsira (active poliastro fork, archived Oct 2023) to compute Earth-Mars distance:
+     `pip install hapsira`
 2. Re-run CGR benchmark with the extended scenario (Moon → Earth → Mars relay chain).
 3. Observe where CGR fails (storage overflow at Earth relay, routing loops when contact
    plans extend beyond the horizon).
