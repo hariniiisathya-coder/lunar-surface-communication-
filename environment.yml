@@ -1,0 +1,25 @@
+name: lunarcomms
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy>=1.24
+  - scipy>=1.10
+  - matplotlib>=3.7
+  - rasterio>=1.3
+  - pyproj>=3.5
+  - astropy>=5.3
+  - pandas>=2.0
+  - tqdm>=4.65
+  - requests>=2.31
+  - jupyter
+  - ipykernel
+  - notebook
+  - pytest
+  - pytest-cov
+  - black
+  - pip
+  - pip:
+      - spiceypy>=6.0
+      - lunarcomms

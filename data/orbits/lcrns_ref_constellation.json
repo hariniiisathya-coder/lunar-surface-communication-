@@ -1,0 +1,81 @@
+{
+  "_comment": "LCRNS Reference Constellation 3.1 orbital elements. Source: Guinn et al. (2025), NTRS 20250002698, https://ntrs.nasa.gov/citations/20250002698",
+  "_note": "Elements are representative values from the public report. For exact state vectors, refer to the full report.",
+  "constellation": {
+    "name": "LCRNS Reference Constellation 3.1",
+    "source": "NTRS 20250002698",
+    "url": "https://ntrs.nasa.gov/citations/20250002698",
+    "epoch_utc": "2026-01-01T00:00:00Z",
+    "target_coverage": ">= 95% of lunar south pole at min_elevation = 5 deg (2-satellite config)",
+    "reference_frame": "MOON_ME"
+  },
+  "satellites": [
+    {
+      "name": "LCRNS-1 (Khon-1 / IM-3)",
+      "operator": "Intuitive Machines for NASA",
+      "launch_target": "Second half 2026",
+      "orbit_type": "ELFO",
+      "sma_km": 5500.0,
+      "eccentricity": 0.60,
+      "inclination_deg": 57.7,
+      "raan_deg": 0.0,
+      "arg_perigee_deg": 90.0,
+      "mean_anomaly_deg_at_epoch": 0.0,
+      "period_hr": 10.0,
+      "perilune_altitude_km": 465,
+      "apolune_altitude_km": 7063,
+      "apoapsis_direction": "south pole",
+      "bands": ["S-band (2503.5-2655 MHz, SFCGb1)", "Ka-band"],
+      "notes": "First LCRNS satellite. Perilune/apolune altitudes derived from a=5500, e=0.60, R_moon=1737.4 km"
+    },
+    {
+      "name": "LCRNS-2 (future)",
+      "operator": "Intuitive Machines for NASA",
+      "launch_target": "2027+",
+      "orbit_type": "ELFO",
+      "sma_km": 5500.0,
+      "eccentricity": 0.60,
+      "inclination_deg": 57.7,
+      "raan_deg": 180.0,
+      "arg_perigee_deg": 90.0,
+      "mean_anomaly_deg_at_epoch": 180.0,
+      "period_hr": 10.0,
+      "perilune_altitude_km": 465,
+      "apolune_altitude_km": 7063,
+      "apoapsis_direction": "south pole",
+      "bands": ["S-band (2503.5-2655 MHz, SFCGb1)", "Ka-band"],
+      "notes": "RAAN offset 180 deg from LCRNS-1 to improve coverage continuity"
+    }
+  ],
+  "comparison": {
+    "lunar_pathfinder_esa": {
+      "name": "Lunar Pathfinder (ESA precursor)",
+      "operator": "ESA / SSTL",
+      "launch_target": "NET Q4 2026",
+      "sma_km": 6141.7,
+      "eccentricity": 0.60,
+      "inclination_deg": 57.7,
+      "raan_deg": null,
+      "arg_perigee_deg": 90.0,
+      "period_hr": 10.0,
+      "perilune_altitude_km": 719,
+      "apolune_altitude_km": 7283,
+      "source": "https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Lunar_Pathfinder"
+    },
+    "queqiao2_cnsa": {
+      "name": "Queqiao-2 (CNSA, operational)",
+      "operator": "CNSA",
+      "launch_date": "2024-03-20",
+      "cospar_id": "2024-051A",
+      "sma_km": 9597.85,
+      "eccentricity": 0.797,
+      "inclination_deg": 119.25,
+      "period_hr": 26.18,
+      "perilune_altitude_km": 254,
+      "apolune_altitude_km": 16941,
+      "apoapsis_direction": "north pole (serves far-side missions)",
+      "lunanet_compatible": false,
+      "source": "https://en.wikipedia.org/wiki/Queqiao-2"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "lunar-comms-survey: Open-Source Toolchain for Lunar Wireless Communications"
+abstract: >
+  A living survey and Python toolchain for lunar wireless communications research.
+  Covers surface RF propagation with lunar terrain and regolith physics, 3GPP/5G
+  stack adaptation for the Moon, and Delay-Tolerant Networking for the Solar System
+  Internet. Validated against LOLA/PGDA DEMs, Siegler 2020 regolith maps, and
+  LCRNS Reference Constellation 3.1 ephemerides.
+version: "0.1.0"
+date-released: "2025-06-01"
+license: MIT
+url: "https://github.com/YOUR_ORG/lunar-comms-survey"
+repository-code: "https://github.com/YOUR_ORG/lunar-comms-survey"
+keywords:
+  - lunar communications
+  - 5G NTN
+  - lunar propagation
+  - regolith dielectric
+  - ELFO
+  - DTN
+  - LunaNet
+  - Artemis
+authors:
+  - name: "Lunar Comms Survey Contributors"

@@ -1,0 +1,421 @@
+%
+% docs/survey/references.bib
+%
+% BibTeX reference database for the lunar-comms-survey.
+% Add new entries at the bottom of each section.
+% Cite in survey chapters as [@key].
+%
+% Convention: key = firstauthorYYYY (or firstauthorYYYYkeyword if ambiguous)
+%
+
+% =============================================================================
+% REGOLITH DIELECTRICS
+% =============================================================================
+
+@article{olhoeft1975,
+  author    = {Olhoeft, Gary R. and Strangway, David W.},
+  title     = {Dielectric properties of the first 100 meters of the {Moon}},
+  journal   = {Earth and Planetary Science Letters},
+  year      = {1975},
+  volume    = {24},
+  pages     = {394--408},
+  doi       = {10.1016/0012-821X(75)90102-2},
+  note      = {Open access via NASA ADS. Canonical formula: eps\_prime = 1.919\^{}rho.}
+}
+
+@incollection{carrier1991,
+  author    = {Carrier, William D. and Olhoeft, Gary R. and Mendell, Wendell},
+  title     = {Physical properties of the lunar surface},
+  booktitle = {Lunar Sourcebook: A User's Guide to the Moon},
+  editor    = {Heiken, Grant and Vaniman, David and French, Bevan},
+  publisher = {Cambridge University Press},
+  year      = {1991},
+  chapter   = {9},
+  isbn      = {978-0-521-33444-0},
+  note      = {Table 9.1: density values. Table 9.2: permittivity vs density.}
+}
+
+@article{siegler2020,
+  author    = {Siegler, Matthew A. and Feng, Shuai and Lehman-Franco, Katherine
+               and Andrews-Hanna, Jeffrey C. and Asmar, Sami W. and Bills, Bruce G.
+               and de Pater, Imke and Elphic, Richard C. and Ghent, Rebecca R.
+               and Lawrence, David J. and others},
+  title     = {Remote Sensing of Lunar Regolith Bulk Density: Developing
+               a Global Lunar Bulk Density Map from {LRO} {Diviner} Radiometry},
+  journal   = {Journal of Geophysical Research: Planets},
+  year      = {2020},
+  volume    = {125},
+  number    = {9},
+  pages     = {e2020JE006405},
+  doi       = {10.1029/2020JE006405},
+  note      = {Open access (AGU). eq.~6: loss tangent fit.
+               Zenodo density map: https://zenodo.org/record/3834965}
+}
+
+@book{heiken1991,
+  editor    = {Heiken, Grant and Vaniman, David and French, Bevan M.},
+  title     = {Lunar Sourcebook: A User's Guide to the Moon},
+  publisher = {Cambridge University Press},
+  year      = {1991},
+  isbn      = {978-0-521-33444-0},
+}
+
+% =============================================================================
+% LUNAR DEM AND TERRAIN
+% =============================================================================
+
+@article{barker2016,
+  author    = {Barker, Michael K. and Mazarico, Erwan and Neumann, Gregory A.
+               and Zuber, Maria T. and Haruyama, Junichi and Smith, David E.},
+  title     = {A new lunar digital elevation model from the {Lunar Orbiter Laser Altimeter}
+               and {SELENE Terrain Camera}},
+  journal   = {Icarus},
+  year      = {2016},
+  volume    = {273},
+  pages     = {346--355},
+  doi       = {10.1016/j.icarus.2016.02.008},
+  note      = {PGDA Product 78 reference. 5~m/pixel south-pole DEM.}
+}
+
+@article{barker2025,
+  author    = {Barker, Michael K. and others},
+  title     = {Lunar South Pole Topographic Roughness Products},
+  journal   = {The Planetary Science Journal},
+  year      = {2025},
+  doi       = {10.3847/PSJ/ad8a08},
+  note      = {PGDA Product 98: multi-baseline roughness at 5~m, 100~m, 1~km.}
+}
+
+@article{mazarico2011,
+  author    = {Mazarico, Erwan and Neumann, Gregory A. and Smith, David E.
+               and Zuber, Maria T. and Torrence, Mark H.},
+  title     = {Illumination conditions of the lunar polar regions using {LOLA} topography},
+  journal   = {Icarus},
+  year      = {2011},
+  volume    = {211},
+  number    = {2},
+  pages     = {1066--1081},
+  doi       = {10.1016/j.icarus.2010.10.030},
+  note      = {PGDA Product 81. Open access preprint: NTRS 20100039014.
+               Table~1: illumination fractions at south-pole peaks.}
+}
+
+% =============================================================================
+% PROPAGATION MODELS
+% =============================================================================
+
+@book{rappaport1996,
+  author    = {Rappaport, Theodore S.},
+  title     = {Wireless Communications: Principles and Practice},
+  publisher = {Prentice Hall},
+  year      = {1996},
+  isbn      = {0-13-375536-3},
+  note      = {Chapter~3: two-ray model, eqs.~3.26--3.30. Breakpoint distance eq.~3.27.}
+}
+
+@book{balanis2012,
+  author    = {Balanis, Constantine A.},
+  title     = {Advanced Engineering Electromagnetics},
+  edition   = {2nd},
+  publisher = {Wiley},
+  year      = {2012},
+  isbn      = {978-0-470-58948-9},
+  note      = {Fresnel coefficients: eqs.~5-17b (TM) and 5-18b (TE).}
+}
+
+@techreport{itu_p525,
+  author      = {{ITU-R}},
+  title       = {Calculation of free-space attenuation},
+  institution = {International Telecommunication Union},
+  type        = {Recommendation},
+  number      = {P.525-4},
+  year        = {2019},
+  url         = {https://www.itu.int/rec/R-REC-P.525/en},
+}
+
+@techreport{itu_p526,
+  author      = {{ITU-R}},
+  title       = {Propagation by diffraction},
+  institution = {International Telecommunication Union},
+  type        = {Recommendation},
+  number      = {P.526-15},
+  year        = {2019},
+  url         = {https://www.itu.int/rec/R-REC-P.526/en},
+  note        = {Section~4.1: knife-edge (eq.~14). Section~4.2.2: Deygout.}
+}
+
+@article{toonen2021,
+  author    = {Toonen, Jonathan and Schaire, Scott H. and Hudiburg, John J. and others},
+  title     = {Lunar Surface Communications Network Design},
+  booktitle = {Proc. IEEE Aerospace Conference},
+  year      = {2021},
+  doi       = {10.1109/AERO50100.2021.9438395},
+  note      = {Baseline coverage map at lunar south pole. Uses eps\_r=3.0, no terrain.
+               Figure~4: received power vs distance.}
+}
+
+@article{jun2025,
+  author    = {Jun, Jihoon and others},
+  title     = {RF coverage map for lunar surface communications},
+  journal   = {IEEE Access},
+  year      = {2025},
+  note      = {Adds terrain diffraction over LOLA profiles. Equatorial links.}
+}
+
+% =============================================================================
+% 3GPP / 5G NTN
+% =============================================================================
+
+@techreport{3gpp_tr38811,
+  author      = {{3GPP}},
+  title       = {Study on New Radio ({NR}) to support non-terrestrial networks},
+  institution = {3rd Generation Partnership Project},
+  type        = {Technical Report},
+  number      = {TR 38.811 v15.4.0},
+  year        = {2020},
+  url         = {https://www.3gpp.org/ftp/Specs/archive/38_series/38.811/},
+  note        = {NTN channel model. Table~6.1.3-1: LEO-600 reference scenario.}
+}
+
+@techreport{3gpp_tr38821,
+  author      = {{3GPP}},
+  title       = {Solutions for {NR} to support non-terrestrial networks},
+  institution = {3rd Generation Partnership Project},
+  type        = {Technical Report},
+  number      = {TR 38.821 v16.0.0},
+  year        = {2021},
+  url         = {https://www.3gpp.org/ftp/Specs/archive/38_series/38.821/},
+  note        = {Section~6: PHY/MAC/RRC solutions for NTN. HARQ, timing advance.}
+}
+
+@techreport{3gpp_ts38101_1,
+  author      = {{3GPP}},
+  title       = {{NR}: User Equipment ({UE}) radio transmission and reception;
+                 Part~1: Range~1 Standalone},
+  institution = {3rd Generation Partnership Project},
+  type        = {Technical Specification},
+  number      = {TS 38.101-1},
+  year        = {2023},
+  url         = {https://www.3gpp.org/ftp/Specs/archive/38_series/38.101-1/},
+  note        = {Table~7.3.2-1: UE sensitivity. ACS requirements.}
+}
+
+@techreport{3gpp_ts38300,
+  author      = {{3GPP}},
+  title       = {{NR}: Overall description; Stage~2},
+  institution = {3rd Generation Partnership Project},
+  type        = {Technical Specification},
+  number      = {TS 38.300 v17.0.0},
+  year        = {2022},
+  url         = {https://www.3gpp.org/ftp/Specs/archive/38_series/38.300/},
+  note        = {Section~4: NR architecture overview. CU/DU/RU split.}
+}
+
+@techreport{edwards2023,
+  author      = {Edwards, Charles D. and Bundick, Steve and others},
+  title       = {Leveraging {LTE/5G} Cellular Architecture for Lunar Surface Communications},
+  institution = {NASA Jet Propulsion Laboratory},
+  type        = {NASA Technical Reports Server},
+  number      = {NTRS 20220015268},
+  year        = {2023},
+  url         = {https://ntrs.nasa.gov/citations/20220015268},
+  note        = {Baseline: eps\_r=3.0, tan delta=0, Friis only.
+                 Table~III: link budget at S-band. Table~IV: coverage radius.}
+}
+
+@techreport{sfcg32_2r5,
+  author      = {{Space Frequency Coordination Group}},
+  title       = {Recommendation Relating to Radiofrequency Allocations for Lunar Missions},
+  institution = {SFCG},
+  type        = {Recommendation},
+  number      = {SFCG 32-2R5},
+  year        = {2022},
+  url         = {https://www.sfcg.org/documents/sfcg32-2r5.pdf},
+  note        = {Lunar S-band frequency allocations. SFCGb1 = 2503.5--2655~MHz.
+                 LunaNet AFS = 2492.028~MHz.}
+}
+
+% =============================================================================
+% LUNANET / LCRNS / MOONLIGHT ARCHITECTURE
+% =============================================================================
+
+@techreport{lunanet_icd_v5,
+  author      = {{NASA}},
+  title       = {{LunaNet} Interoperability Specification},
+  institution = {NASA},
+  type        = {Interface Control Document},
+  number      = {v5.0, NTRS 20220010064},
+  year        = {2022},
+  url         = {https://ntrs.nasa.gov/citations/20220010064},
+  note        = {LunaNet AFS 2492.028~MHz. BPv7 requirement (Section~4.1).}
+}
+
+@techreport{lcrns_ref_const_31,
+  author      = {Guinn, Joseph R. and others},
+  title       = {{LCRNS} Reference Constellation Design 3.1},
+  institution = {NASA},
+  type        = {NASA Technical Reports Server},
+  number      = {NTRS 20250002698},
+  year        = {2025},
+  url         = {https://ntrs.nasa.gov/citations/20250002698},
+  note        = {2-satellite ELFO constellation parameters. Table~5: coverage fractions.
+                 Key reference for Tracks~S2 and~S3.}
+}
+
+@misc{lunar_pathfinder_esa,
+  author       = {{ESA}},
+  title        = {Lunar Pathfinder},
+  howpublished = {ESA spacecraft factsheet},
+  year         = {2024},
+  url          = {https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Lunar_Pathfinder},
+  note         = {Nominal ELFO: a=6141.7~km, e=0.60, i=57.7$\degree$, $\omega$=90$\degree$.
+                  Launch: NET Q4 2026.}
+}
+
+% =============================================================================
+% ORBITAL MECHANICS
+% =============================================================================
+
+@inproceedings{folta2006,
+  author    = {Folta, David C. and Quinn, Dominic A.},
+  title     = {Lunar frozen orbits},
+  booktitle = {Proc. AIAA/AAS Astrodynamics Specialist Conference},
+  year      = {2006},
+  number    = {AIAA 2006-6749},
+  doi       = {10.2514/6.2006-6749},
+  note      = {Open access: NTRS 20060028369. Canonical ELFO design paper.
+               Frozen conditions for eccentricity and argument of perigee.}
+}
+
+@inproceedings{whitley2016,
+  author    = {Whitley, Ryan J. and Martinez, Roland},
+  title     = {Options for staging orbits in cislunar space},
+  booktitle = {Proc. IEEE Aerospace Conference},
+  year      = {2016},
+  doi       = {10.1109/AERO.2016.7500519},
+  note      = {Covers NRHO (Gateway), ELFO, and DRO trade-offs.}
+}
+
+@article{park2021,
+  author    = {Park, Ryan S. and Folkner, William M. and Williams, James G. and Boggs, Dale H.},
+  title     = {The {JPL} Planetary and Lunar Ephemerides {DE440} and {DE441}},
+  journal   = {The Astronomical Journal},
+  year      = {2021},
+  volume    = {161},
+  number    = {3},
+  pages     = {105},
+  doi       = {10.3847/1538-3881/abd414},
+  note      = {DE440 reference. MOON\_ME vs MOON\_PA frame difference (~270~m).}
+}
+
+@book{bate1971,
+  author    = {Bate, Roger R. and Mueller, Donald D. and White, Jerry E.},
+  title     = {Fundamentals of Astrodynamics},
+  publisher = {Dover Publications},
+  year      = {1971},
+  isbn      = {978-0-486-60061-1},
+  note      = {Section~2.4: Keplerian elements to Cartesian.
+               Section~4.2: Kepler's equation. Available at archive.org.}
+}
+
+@article{iiyama2023,
+  author    = {Iiyama, Keidai and Kruger, John and D'Amico, Simone},
+  title     = {Autonomous Distributed Lunar Navigation and Communication with a
+               Small Satellite Constellation},
+  journal   = {Navigation},
+  year      = {2023},
+  volume    = {70},
+  number    = {1},
+  doi       = {10.33012/navi.560},
+  note      = {ELFO constellation elevation statistics at south pole. Fig.~3.}
+}
+
+% =============================================================================
+% DTN / BUNDLE PROTOCOL
+% =============================================================================
+
+@techreport{ccsds_bpv7,
+  author      = {{CCSDS}},
+  title       = {Bundle Protocol Specification},
+  institution = {Consultative Committee for Space Data Systems},
+  type        = {Blue Book},
+  number      = {734.2-B-2},
+  year        = {2020},
+  url         = {https://public.ccsds.org/Pubs/734x2b2.pdf},
+  note        = {BPv7 specification. Required by LunaNet.}
+}
+
+@techreport{ccsds_sabr,
+  author      = {{CCSDS}},
+  title       = {Schedule-Aware Bundle Routing},
+  institution = {Consultative Committee for Space Data Systems},
+  type        = {Blue Book},
+  number      = {734.3-B-1},
+  year        = {2019},
+  url         = {https://public.ccsds.org/Pubs/734x3b1.pdf},
+  note        = {SABR specification. Alternative to ION-DTN CGR.}
+}
+
+@techreport{ion_dtn_ntrs,
+  author      = {Burleigh, Scott C. and Cerf, Vinton G.},
+  title       = {Interplanetary Overlay Network: An Implementation of the {DTN}
+                 Bundle Protocol},
+  institution = {NASA},
+  type        = {NASA Technical Reports Server},
+  number      = {NTRS 20180003067},
+  year        = {2018},
+  url         = {https://ntrs.nasa.gov/citations/20180003067},
+  note        = {ION-DTN overview. Contact Graph Routing (CGR) description.}
+}
+
+@misc{dsns2025,
+  author       = {Oxford SSL},
+  title        = {{DSNS}: Deep Space Network Simulator},
+  howpublished = {GitHub repository},
+  year         = {2025},
+  url          = {https://github.com/ssloxford/DSNS},
+  note         = {arXiv:2508.04317. Python-native DTN simulator. CCSDS-compatible.}
+}
+
+@article{dejonckere2025,
+  author    = {De Jonck\`{e}re, Simon and others},
+  title     = {{A-SABR}: Adaptive Schedule-Aware Bundle Routing},
+  journal   = {IEEE Communications Magazine},
+  year      = {2025},
+  note      = {Improved routing for disruption-tolerant deep-space networks.}
+}
+
+% =============================================================================
+% MINI-RF AND RADAR
+% =============================================================================
+
+@article{cahill2014,
+  author    = {Cahill, Joshua T. S. and Thomson, Brett J. and Patterson, G. Wesley
+               and Bussey, D. Benjamin J. and Neish, Catherine D. and Lopez, Nicolas R.
+               and others},
+  title     = {The {Mini-RF} radar instruments' stylized image {S}-band {CPR}
+               products for the lunar south pole region},
+  journal   = {Icarus},
+  year      = {2014},
+  volume    = {243},
+  pages     = {173--190},
+  doi       = {10.1016/j.icarus.2014.08.025},
+  note      = {Mini-RF S-band CPR at lunar south pole. Anchor for regolith
+               scattering validation.}
+}
+
+% =============================================================================
+% TO BE ADDED — templates for students
+% =============================================================================
+
+% Add your references below in the appropriate section.
+% Required fields: author, title, year, doi (if available), url (if open access).
+%
+% @article{yourkey,
+%   author  = {},
+%   title   = {},
+%   journal = {},
+%   year    = {},
+%   doi     = {},
+%   note    = {},
+% }
