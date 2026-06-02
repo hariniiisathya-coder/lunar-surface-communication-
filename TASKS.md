@@ -172,16 +172,19 @@ Section IV. The terrain-aware result should be substantially smaller for typical
 ### S1-W7–8 — Spatial regolith variation + uncertainty (Weeks 7–8)
 
 **Files:**
-- `lunarcomms/io/pgda.py` — `sample_density()`
+- `lunarcomms/io/pgda.py` — `sample_loss_tangent_params()`
 - `lunarcomms/propagation/two_ray.py` — `path_loss_spatial_db()`
 
 **Steps:**
-1. Download Siegler (2020) density raster from Zenodo: https://zenodo.org/record/3834965
-2. Implement `sample_density()` — reproject to PGDA-78 pixel grid.
-3. Implement `path_loss_spatial_db()` — vary ρ at the specular reflection point.
-4. Rerun coverage maps with spatially varying ρ.
+1. Download Siegler (2020) loss-tangent parameter maps from Zenodo:
+   https://zenodo.org/records/3993798
+   Files: "Figure 11_Constant Loss Parameter_a'.txt" and "Figure 11_Frequency Exponent_b'.txt"
+2. Implement `sample_loss_tangent_params()` — interpolate a'(lon,lat) and b'(lon,lat) to
+   the PGDA-78 pixel grid (nearest-neighbour at ~8 km native resolution is sufficient).
+3. Implement `path_loss_spatial_db()` — use spatially varying tan_delta = a' * f**b'.
+4. Rerun coverage maps with spatially varying tan δ.
 5. Monte Carlo uncertainty analysis (N=100 runs):
-   - Perturb ρ ± 20% (DEM uncertainty), tan δ ± 50% (Siegler 2020 stated uncertainty).
+   - Perturb a' ± 30%, b' ± 0.1 (Siegler 2020 stated uncertainty on retrieved parameters).
    - Report 5th–95th percentile band on coverage area.
 
 **Deliverable:** Uncertainty-quantified coverage maps. This is what makes the paper publishable —
@@ -279,9 +282,9 @@ LEO (Doppler always >10 kHz, delay <5 ms); the lunar ELFO regime is fundamentall
 
 ---
 
-### S2-W4 — PHY layer analysis: BLER vs SNR (Week 4)
+### S2-W4 — PHY layer analysis: SCS suitability and HARQ timer analysis (Week 4)
 
-**Goal:** Quantify BLER degradation under lunar ELFO Doppler and delay vs 3GPP TR 38.821 LEO baseline.
+**Goal:** Identify which 3GPP NR subcarrier spacings and timer settings are viable under lunar ELFO Doppler and delay, compared to the 3GPP TR 38.821 LEO-600 baseline.
 
 **Steps:**
 1. Extract Doppler time series from your ELFO propagator:

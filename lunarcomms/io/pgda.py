@@ -24,9 +24,12 @@ PGDA Product 98 — Surface roughness at multiple baselines (Barker et al. 2025)
     Files: SP_roughness_*.tif (RMS slope at 5 m, 100 m, 1 km baselines)
     Reference: Barker, M. K. et al. (2025), doi:10.3847/PSJ/ad8a08
 
-Siegler 2020 regolith density map (not a PGDA product):
-    URL: https://zenodo.org/record/3834965
-    Files: lunar_density_map.tif
+Siegler 2020 global loss-tangent parameter maps (not a PGDA product):
+    URL: https://zenodo.org/records/3993798
+    Files: "Figure 11_Constant Loss Parameter_a'.txt"   (global map of a')
+           "Figure 11_Frequency Exponent_b'.txt"       (global map of b')
+    Format: text tables — lon, lat, value columns, ~8 km resolution (LRO Diviner).
+    Usage:  tan_delta(f) = a_prime * f ** b_prime  (f in GHz)
     Reference: Siegler, M. A. et al. (2020), doi:10.1029/2020JE006405
 
 Download all with:  python data/download_pgda.py
@@ -122,34 +125,40 @@ def extract_profile(
     )
 
 
-def sample_density(
-    density_tif_path: str | Path,
-    rows: np.ndarray,
-    cols: np.ndarray,
-    dem_transform,
-) -> np.ndarray:
-    """Sample regolith bulk density at given DEM pixel locations.
+def sample_loss_tangent_params(
+    siegler_dir: str | Path,
+    lons_deg: np.ndarray,
+    lats_deg: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Sample spatially varying loss-tangent parameters a' and b' from Siegler (2020).
 
-    TODO (S1, Week 5):
-        Load the Siegler (2020) density raster (Zenodo: https://zenodo.org/record/3834965)
-        and reproject/resample it to the PGDA-78 pixel grid, then return
-        density values at the requested (row, col) locations.
+    The loss tangent is modelled as:  tan_delta(f) = a_prime * f ** b_prime
+    where f is in GHz. The global maps of a' and b' are from LRO Diviner
+    microwave radiometer data at ~8 km native resolution.
 
-        Note: the Siegler density raster is at ~8 km resolution (LRO Diviner).
-        You must resample to 5 m using rasterio.warp.reproject() or
-        scipy.ndimage.zoom(). Use nearest-neighbour or bilinear interpolation.
+    TODO (S1, Week 7):
+        Download from https://zenodo.org/records/3993798:
+            "Figure 11_Constant Loss Parameter_a'.txt"
+            "Figure 11_Frequency Exponent_b'.txt"
+        Each file has columns: longitude (deg), latitude (deg), value.
+        Use scipy.interpolate.griddata or nearest-neighbour lookup to
+        return a_prime and b_prime at the requested (lon, lat) locations.
+
+        Validation: at mare basalt, a' ~ 0.002-0.005. At highlands, a' ~ 0.001.
+        b' is typically in the range 0.3-0.6 (Siegler 2020, Fig. 11).
 
     Parameters
     ----------
-    density_tif_path : path to Siegler 2020 density GeoTIFF.
-    rows, cols : ndarray   DEM pixel coordinates to sample.
-    dem_transform : affine.Affine  DEM pixel-to-world transform.
+    siegler_dir : path to directory containing the Siegler 2020 text files.
+    lons_deg : ndarray   Longitude in degrees (−180 to 180).
+    lats_deg : ndarray   Latitude in degrees (−90 to 90).
 
     Returns
     -------
-    density_gcm3 : ndarray   Bulk density in g/cm³ at each requested pixel.
+    a_prime : ndarray   Loss-tangent constant a' at each requested point.
+    b_prime : ndarray   Frequency exponent b' at each requested point.
     """
     raise NotImplementedError(
-        "TODO (S1, Week 5): sample Siegler 2020 density raster. "
-        "Source: https://zenodo.org/record/3834965"
+        "TODO (S1, Week 7): sample Siegler 2020 loss-tangent parameter maps. "
+        "Source: https://zenodo.org/records/3993798"
     )
