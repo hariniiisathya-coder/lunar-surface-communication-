@@ -31,10 +31,11 @@ NAIF SPICE toolkit: https://naif.jpl.nasa.gov/naif/toolkit.html
 Required by: `lunarcomms.io.pgda`, coverage map notebooks.
 
 ```bash
-python data/download_pgda.py --product 78
+python data/download_pgda.py              # Site01 = Connecting Ridge (default)
+python data/download_pgda.py --site Site04  # Shackleton rim
 ```
 
-Downloads to `data/dems/`:
+Downloads to `data/dem/`:
 
 | Product | Resolution | Size | URL |
 |---------|-----------|------|-----|
@@ -42,32 +43,30 @@ Downloads to `data/dems/`:
 | PGDA-81 (illumination) | 240 m/px | ~50 MB | https://pgda.gsfc.nasa.gov/products/81 |
 | PGDA-98 (roughness) | 5 m/px | ~500 MB | https://pgda.gsfc.nasa.gov/products/98 |
 
-For development without the full 2 GB DEM, use a 40-km clip:
+For development, download only one site (e.g., Site01 ~300 MB vs full ~2 GB):
 ```bash
-python data/download_pgda.py --product 78 --clip 40  # ~30 MB
+python data/download_pgda.py --site Site01 --product surf
 ```
 
 **Projection:** Polar Stereographic (south), EPSG:104903 (lunar ME)
 **Datum:** MOON_ME, DE440
 **Vertical datum:** Mean lunar radius 1737.4 km
-**Reference:** Barker et al. (2016), doi:10.1016/j.icarus.2016.02.008
+**Reference:** Barker et al. (2021), doi:10.1016/j.pss.2020.105119
 
 ---
 
-## Siegler 2020 Regolith Density Map (~10 MB)
+## Siegler 2020 Loss Tangent Parameter Maps (~10 MB)
 
-Required by: `lunarcomms.io.pgda.sample_density()` (Track S1 Week 5).
+Required by: `lunarcomms.io.pgda.sample_loss_tangent_params()` (Track S1 Week 5).
 
-```bash
-python data/download_pgda.py --siegler2020
-```
+Download manually from Zenodo (two text files: a’ and b’ maps):
+https://zenodo.org/records/3993798
 
-Downloads `lunar_density_map.tif` from Zenodo:
-https://zenodo.org/record/3834965
-
+**Format:** Text files (lon, lat, value) — NOT a GeoTIFF
 **Resolution:** ~8 km/px (LRO Diviner footprint)
 **Coverage:** Global
 **Reference:** Siegler et al. (2020), doi:10.1029/2020JE006405
+**Model:** tanδ(f) = a’ · f^b’ (eq. 6)
 
 ---
 
@@ -76,7 +75,7 @@ https://zenodo.org/record/3834965
 **Already in this repo:** `data/orbits/lcrns_ref_constellation.json`
 
 Orbital elements extracted from:
-Guinn et al. (2025), NTRS 20250002698.
+Ryden, G. and Volle, M. (2025), NTRS 20250002698.
 https://ntrs.nasa.gov/citations/20250002698
 
 No download needed.
@@ -100,11 +99,11 @@ Reference: Cahill et al. (2014), doi:10.1016/j.icarus.2014.08.025
 | Dataset | Size | Required for |
 |---------|------|-------------|
 | SPICE kernels | ~150 MB | S1, S2, S3 (geometry) |
-| PGDA-78 full | ~2 GB | S1 (full coverage maps) |
-| PGDA-78 clip 40km | ~30 MB | S1 (development) |
+| PGDA-78 full (all sites) | ~2 GB | S1 (full coverage maps) |
+| PGDA-78 Site01 only | ~300 MB | S1 (development) |
 | PGDA-81 illumination | ~50 MB | S1 (optional validation) |
 | PGDA-98 roughness | ~500 MB | S1 (stretch goal) |
-| Siegler 2020 density | ~10 MB | S1 Week 5+ |
+| Siegler 2020 loss tangent params | ~10 MB | S1 Week 5+ |
 | LCRNS elements (JSON) | <1 KB | S2, S3 (included) |
 
-**Minimum to get started:** SPICE kernels + PGDA-78 clip (~180 MB)
+**Minimum to get started:** SPICE kernels + PGDA-78 Site01 (~450 MB)
