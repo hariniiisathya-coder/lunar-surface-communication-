@@ -66,7 +66,7 @@
 
 @article{barker2021,
   author    = {Barker, Michael K. and Mazarico, Erwan and Neumann, Gregory A.
-               and Zuber, Maria T. and Torrence, Mark H. and others},
+               and Smith, David E. and Zuber, Maria T. and Head, James W.},
   title     = {Improved {LOLA} Elevation Maps for South Pole Landing Sites:
                Error Estimates and Their Impact on Illumination Conditions},
   journal   = {Planetary and Space Science},
@@ -75,15 +75,20 @@
   pages     = {105119},
   doi       = {10.1016/j.pss.2020.105119},
   note      = {Official data usage policy citation for PGDA Product 78.
-               5~m/pixel south-pole DEMs (Site01 = Shackleton region).}
+               5~m/pixel south-pole DEMs (Site01 = Connecting Ridge).}
 }
 
 @article{barker2025,
-  author    = {Barker, Michael K. and others},
-  title     = {Lunar South Pole Topographic Roughness Products},
+  author    = {Barker, Michael K. and Mazarico, Erwan and Neumann, Gregory A.
+               and Smith, David E. and Zuber, Maria T. and Head, James W.
+               and Sun, Xiaoli},
+  title     = {Large-Scale Roughness Properties of the Lunar North and South
+               Polar Regions as Measured by the Lunar Orbiter Laser Altimeter ({LOLA})},
   journal   = {The Planetary Science Journal},
   year      = {2025},
-  doi       = {10.3847/PSJ/ad8a08},
+  volume    = {6},
+  pages     = {83},
+  doi       = {10.3847/PSJ/adbc9d},
   note      = {PGDA Product 98: multi-baseline roughness at 5~m, 100~m, 1~km.}
 }
 
@@ -160,13 +165,18 @@
 }
 
 @inproceedings{jun2025,
-  author    = {Jun, William W. and others},
-  title     = {A Rapid, Low-Cost Path to Lunar Communication and Navigation},
+  author    = {Jun, William W. and Tanaka, Toshiki and Carter, Paul
+               and Anderson, Rodney L. and Bhamidipati, Sriramya and Cheung, Kar-Ming},
+  title     = {A Rapid, Low-Cost Path to Lunar Communication and Navigation
+               with a Lunar Surface Station},
   booktitle = {Proc. IEEE Aerospace Conference},
   year      = {2025},
   doi       = {10.1109/AERO63441.2025.11068684},
   url       = {https://www-robotics.jpl.nasa.gov/media/documents/A_Rapid_Low-Cost_Path_to_Lunar_Communication_and_Navigation.pdf},
-  note      = {JPL LunaNet architecture. Small-sat relay concepts for lunar south pole.}
+  note      = {SSE PNT+C architecture: surface station at Connecting Ridge supplements sparse
+               ELFO constellation (\leq4 LNSPs). JDR corrections + AFS broadcast achieve
+               $\leq$10~m (3$\sigma$) position, 300~Mbps surface link.
+               Table~9: S-band (2.245~GHz) rover-to-SS link budgets with 2-ray/FEKO models.}
 }
 
 % =============================================================================
@@ -204,7 +214,7 @@
   number      = {TS 38.101-1},
   year        = {2023},
   url         = {https://www.3gpp.org/ftp/Specs/archive/38_series/38.101-1/},
-  note        = {Table~7.3.2-1: UE sensitivity. ACS requirements.}
+  note        = {Table~7.3.2-1: UE reference sensitivity. Table~7.3.3-1: ACS \geq 33~dB (FR1).}
 }
 
 @techreport{3gpp_ts38300,
@@ -219,27 +229,61 @@
 }
 
 @techreport{edwards2023,
-  author      = {Edwards, Charles D. and Bundick, Steve and others},
-  title       = {3GPP Telecommunications Technology on the Moon},
-  institution = {NASA Jet Propulsion Laboratory},
+  author      = {Edwards, Bernard L. and Wagner, Raymond S. and Zemba, Michael J.
+                 and Millard, Wesley P. and Braham, Stephen and Gifford, Kevin
+                 and Somerlock, Oscar},
+  title       = {3GPP Mobile Telecommunications Technology on the Moon},
+  institution = {NASA Goddard Space Flight Center},
   type        = {NASA Technical Reports Server},
   number      = {NTRS 20220015268},
   year        = {2023},
   url         = {https://ntrs.nasa.gov/citations/20220015268},
-  note        = {Baseline: eps\_r=3.0, tan delta=0, Friis only.
-                 Table~III: link budget at S-band. Table~IV: coverage radius.}
+  note        = {Table~III: SFCG 32-2R4 recommended 3GPP bands (SFCGb1--b7).
+                 Table~IV: link parameters for south-pole scenario.
+                 LunaNet PNT band 2.484--2.5~GHz limits SFCGb1 bottom to 2503.5~MHz.}
 }
 
-@techreport{sfcg32_2r5,
+@techreport{sfcg32_2r6,
   author      = {{Space Frequency Coordination Group}},
-  title       = {Recommendation Relating to Radiofrequency Allocations for Lunar Missions},
+  title       = {Communication and Positioning, Navigation, and Timing Frequency
+                 Allocations and Sharing in the Lunar Region},
   institution = {SFCG},
   type        = {Recommendation},
-  number      = {SFCG 32-2R5},
-  year        = {2022},
+  number      = {SFCG 32-2R6},
+  year        = {2025},
   url         = {https://sfcgonline.org/resources/recommendations/},
   note        = {Lunar S-band frequency allocations. SFCGb1 = 2503.5--2655~MHz.
-                 LunaNet AFS = 2492.028~MHz.}
+                 LunaNet AFS = 2492.028~MHz. Supersedes R5 (2022) and R4 (2022).}
+}
+
+@techreport{sfcg42_1,
+  author      = {{Space Frequency Coordination Group}},
+  title       = {Frequency Channel Plan for In-Situ Lunar Data Relay Satellites},
+  institution = {SFCG},
+  type        = {Recommendation},
+  number      = {SFCG 42-1},
+  year        = {2024},
+  url         = {https://sfcgonline.org/resources/recommendations/},
+  note        = {Relay channel plan for S-band (2~GHz) and 23/27~GHz lunar links.
+                 Prox-1 primary hailing: 2084.767~MHz fwd / 2264~MHz ret.
+                 LunaNet multiple-access: 2059.2--2065.2~MHz fwd / 2236.5--2242.5~MHz ret.
+                 Turnaround ratio 240/221 (2/2.2~GHz). Relevant for S3 contact planning.}
+}
+
+@techreport{sfcg43_1,
+  author      = {{Space Frequency Coordination Group}},
+  title       = {Protection of In-Situ Lunar Region Positioning, Navigation, and
+                 Timing ({PNT}) Services in the 2483.5--2500~{MHz} Frequency Band
+                 from Unwanted Emissions from Lunar Surface Communications Systems},
+  institution = {SFCG},
+  type        = {Recommendation},
+  number      = {SFCG 43-1},
+  year        = {2025},
+  url         = {https://sfcgonline.org/resources/recommendations/},
+  note        = {Key for S2-W5: PNT band (2483.5--2500~MHz, incl.\ LunaNet AFS 2492.028~MHz)
+                 must be protected from SFCGb1 surface 3GPP out-of-band emissions.
+                 Limit: $-121$~dB(W/m$^2$/MHz) aggregate unwanted power at PNT antenna.
+                 Guard band to SFCGb1 bottom (2503.5~MHz): only 11.5~MHz.}
 }
 
 % =============================================================================
@@ -251,21 +295,24 @@
   title       = {{LunaNet} Interoperability Specification},
   institution = {NASA},
   type        = {Interface Control Document},
-  number      = {v5.0, NTRS 20220010064},
-  year        = {2022},
-  url         = {https://ntrs.nasa.gov/citations/20220010064},
+  number      = {v5.0, NTRS 20230012811},
+  year        = {2023},
+  url         = {https://ntrs.nasa.gov/citations/20230012811},
   note        = {LunaNet AFS 2492.028~MHz. BPv7 requirement (Section~4.1).}
 }
 
 @techreport{lcrns_ref_const_31,
-  author      = {Guinn, Joseph R. and others},
-  title       = {{LCRNS} Reference Constellation Design 3.1},
-  institution = {NASA},
+  author      = {Ryden, Grant and Volle, Michael},
+  title       = {{NASA} Lunar Communications Relay and Navigation Systems ({LCRNS})
+                 Reference Constellation 3.1},
+  institution = {NASA Goddard Space Flight Center},
   type        = {NASA Technical Reports Server},
   number      = {NTRS 20250002698},
   year        = {2025},
   url         = {https://ntrs.nasa.gov/citations/20250002698},
-  note        = {2-satellite ELFO constellation parameters. Table~5: coverage fractions.
+  note        = {5-satellite ELFO constellation. Ryden: GSFC Code~592; Volle: GSFC~595.
+                 Epoch: 2027-03-01. Table~1: Keplerian elements in Moon PA frame (DE421).
+                 $a \approx 11305$--$11327$~km, $e = 0.691982$, period $\approx 30$~h.
                  Key reference for Tracks~S2 and~S3.}
 }
 
@@ -290,7 +337,7 @@
   year      = {2006},
   number    = {AIAA 2006-6749},
   doi       = {10.2514/6.2006-6749},
-  note      = {Open access: NTRS 20060028369. Canonical ELFO design paper.
+  note      = {Canonical ELFO design paper.
                Frozen conditions for eccentricity and argument of perigee.}
 }
 
@@ -326,11 +373,11 @@
 }
 
 @inproceedings{iiyama2023,
-  author    = {Iiyama, Keidai and Kruger, John and D'Amico, Simone},
+  author    = {Iiyama, Keidai and Kruger, Justin and D'Amico, Simone},
   title     = {Autonomous Distributed Angles-Only Navigation and Timekeeping
                in Lunar Orbit},
   booktitle = {Proc. 36th International Technical Meeting of the Satellite Division
-               of the Institute of Navigation (ION ITM 2023)},
+               of the Institute of Navigation (ION GNSS+ 2023)},
   year      = {2023},
   url       = {https://www.ion.org/publications/abstract.cfm?articleID=18207},
   note      = {ELFO constellation elevation statistics at south pole.
@@ -360,7 +407,8 @@
   number      = {734.3-B-1},
   year        = {2019},
   url         = {https://public.ccsds.org/Pubs/734x3b1.pdf},
-  note        = {SABR specification. Alternative to ION-DTN CGR.}
+  note        = {CCSDS standard specifying CGR-based DTN routing.
+               CGR (from ION-DTN) is the implementation of this standard.}
 }
 
 @misc{ion_dtn_ntrs,
@@ -383,12 +431,15 @@
   note         = {arXiv:2508.04317. Python-native DTN simulator. CCSDS-compatible.}
 }
 
-@article{dejonckere2025,
-  author    = {De Jonck\`{e}re, Simon and others},
-  title     = {{A-SABR}: Adaptive Schedule-Aware Bundle Routing},
-  journal   = {IEEE Communications Magazine},
+@inproceedings{dejonckere2025,
+  author    = {De Jonck\`{e}re, Olivier and Ma, Longrui and Fraire, Juan A.},
+  title     = {{A-SABR}: The Adaptive Library for Schedule-Aware Bundle Routing},
+  booktitle = {Proc. IEEE International Conference on Wireless for Space and
+               Extreme Environments (WiSEE)},
   year      = {2025},
-  note      = {Improved routing for disruption-tolerant deep-space networks.}
+  doi       = {10.1109/WiSEE57913.2025.11229852},
+  url       = {https://ieeexplore.ieee.org/document/11229852},
+  note      = {Improved adaptive routing for DTN deep-space networks. IEEE WiSEE 2025.}
 }
 
 % =============================================================================

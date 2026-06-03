@@ -16,7 +16,7 @@ contribute to the same repository. See `README.md` for the repo structure.
 |-----|----------|
 | 1 | Read NASA Moon Fact Sheet + Wikipedia "Orbit of the Moon". Calculate Earth-Moon delay and radio horizon by hand. |
 | 2 | Open LROC QuickMap ([quickmap.lroc.asu.edu](https://quickmap.lroc.asu.edu)). Identify Connecting Ridge, Shackleton crater, de Gerlache. Write 1-page "what I see" summary. |
-| 3 | Read Edwards et al. (2023) NTRS 20220015268 ("3GPP Telecommunications Technology on the Moon"). Identify the three main simplifying assumptions the paper makes. |
+| 3 | Read Edwards et al. (2023) NTRS 20220015268 ("3GPP Mobile Telecommunications Technology on the Moon"). Identify the three main simplifying assumptions the paper makes. |
 | 4 | Install environment: `conda env create -f environment.yml && pip install -e ".[dev]"`. Run `pytest tests/ -v` → all tests should raise `NotImplementedError` (that is expected and correct). |
 | 5 | Draw the shared scenario diagram (see README) on a whiteboard. Each student explains their track to the other two. |
 
@@ -234,7 +234,7 @@ no existing lunar coverage paper includes this.
 
 5. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
    (AFS frequency 2492.028 MHz and its proximity to 3GPP SFCGb1 band.)
-   NASA NTRS: https://ntrs.nasa.gov/citations/20220010064
+   NASA NTRS: https://ntrs.nasa.gov/citations/20230012811
 
 ---
 
@@ -244,22 +244,22 @@ no existing lunar coverage paper includes this.
 
 **Steps:**
 1. Read 3GPP TR 38.821, Table 6.1.3-1: LEO-600 reference scenario Doppler ±24 kHz, delay 1.5–5 ms.
-2. For LCRNS-1 ELFO (a=5500 km, e=0.60, i=57.7°, w=90°, from `data/orbits/lcrns_ref_constellation.json`):
-   - v_peri = sqrt(mu*(1+e)/(a*(1-e))) = sqrt(4902.8*1.6/(5500*0.4)) ≈ 1.89 km/s
-   - v_apo  = sqrt(mu*(1-e)/(a*(1+e))) = sqrt(4902.8*0.4/(5500*1.6)) ≈ 0.47 km/s
+2. For LCRNS SV-1 ELFO (a=11315.936 km, e=0.691982, i=59.37°, w=92.49°≈90°, from `data/orbits/lcrns_ref_constellation.json`):
+   - v_peri = sqrt(mu*(1+e)/(a*(1-e))) = sqrt(4902.8*1.691982/(11315.936*0.308018)) ≈ 1.54 km/s
+   - v_apo  = sqrt(mu*(1-e)/(a*(1+e))) = sqrt(4902.8*0.308018/(11315.936*1.691982)) ≈ 0.28 km/s
 3. With w=90°, apolune is over the south pole — the contact window IS the apolune arc.
    Max Doppler during the contact window at S-band (2.5 GHz):
-   - Apolune (visible from south pole): Df_max = v_apo/c * f = (470/3e5) * 2.5e9 ≈ 3.9 kHz
-   - Perilune (NOT visible from south pole for w=90°): Df_max ≈ 15.8 kHz — for comparison only.
+   - Apolune (visible from south pole): Df_max = v_apo/c * f = (280/3e5) * 2.5e9 ≈ 2.3 kHz
+   - Perilune (NOT visible from south pole for w=90°): Df_max ≈ 12.8 kHz — for comparison only.
 4. One-way delay during contact window:
-   - Apolune altitude = a*(1+e) - R_Moon = 8800 - 1737 = 7063 km → tau = 7063/3e5 ≈ 23.5 ms
+   - Apolune altitude = a*(1+e) - R_Moon = 11315.936*1.691982 - 1737.4 = 17395 km → tau = 17395/3e5 = 58 ms
 5. Compare against 3GPP TR 38.821 LEO-600 baseline. Write a table.
 
-**Key finding:** During contact windows (satellite near apolune), Doppler is ~3.9 kHz and delay is
-~23.5 ms. The 3.9 kHz Doppler exceeds the 10%-of-SCS threshold for SCS 15 kHz (1.5 kHz) and SCS
-30 kHz (3.0 kHz); SCS 60 kHz (threshold 6.0 kHz) is the minimum viable option. The 23.5 ms
-one-way delay gives HARQ RTT ~47 ms vs the default 4 ms NR value. 3GPP NTN was designed for
-LEO (Doppler always >10 kHz, delay <5 ms); the lunar ELFO regime is fundamentally different.
+**Key finding:** During contact windows (satellite near apolune), Doppler is ~2.3 kHz and delay is
+~58 ms. The 2.3 kHz Doppler exceeds the SCS 15 kHz threshold (1.5 kHz) but is below the SCS
+30 kHz threshold (3.0 kHz); SCS 30 kHz is the minimum viable option. The 58 ms one-way delay
+gives HARQ RTT ~116 ms vs the default 4 ms NR value — a 29x increase. 3GPP NTN was designed for
+LEO (delay <5 ms); the lunar ELFO delay regime is dominated by altitude, not Doppler.
 
 ---
 
@@ -273,12 +273,12 @@ LEO (Doppler always >10 kHz, delay <5 ms); the lunar ELFO regime is fundamentall
 3. Implement `south_pole_elevation_deg()`.
 4. Run `pytest tests/test_geometry.py::TestELFOGeometry`.
 5. Propagate for 48 h. Plot elevation angle from south pole vs time.
-   - You should see 4–5 peaks per 48 h (one per 10-h orbit), each lasting ~7–8 h above 5°.
-   - Compare against LCRNS Reference Constellation 3.1 (NTRS 20250002698), Figure 3.
+   - You should see ~1.6 peaks per 48 h (one per 30-h orbit), each lasting ~15–20 h above 5°.
+   - Compare against LCRNS Reference Constellation 3.1 (NTRS 20250002698): verify period ≈ 30 h and elevation peak geometry matches Table~1 elements.
 
 **Acceptance criteria:**
 - `pytest tests/test_geometry.py::TestELFOGeometry` → all passing.
-- Elevation plot matches NTRS 20250002698 Fig. 3 qualitatively.
+- Elevation plot shows period ≈ 30 h and ~15–20 h contact windows, consistent with Table~1 elements of NTRS 20250002698.
 
 ---
 
@@ -292,14 +292,14 @@ LEO (Doppler always >10 kHz, delay <5 ms); the lunar ELFO regime is fundamentall
 2. Analyse per 3GPP TR 38.821, Section 6.2.1:
    - Which subcarrier spacings (SCS 15 / 30 / 60 kHz) can tolerate Δf from Step 1?
    - Rule: acceptable Doppler offset < 10% of SCS (3GPP RAN4 guideline).
-   - During contact window (apolune, Df≈3.9 kHz):
-     SCS 15 kHz → failure (3.9 > 1.5 kHz threshold).
-     SCS 30 kHz → failure (3.9 > 3.0 kHz threshold).
-     SCS 60 kHz → OK (3.9 < 6.0 kHz threshold) — minimum viable SCS for lunar ELFO.
+   - During contact window (apolune, Df≈2.3 kHz):
+     SCS 15 kHz → failure (2.3 > 1.5 kHz threshold).
+     SCS 30 kHz → OK (2.3 < 3.0 kHz threshold) — minimum viable SCS for lunar ELFO.
+     SCS 60 kHz → easily OK.
 3. Analyse HARQ RTT:
-   - With slant range 7000 km (apolune): RTT = 2 · 23 ms = 46 ms.
+   - With slant range 17400 km (apolune): RTT = 2 · 58 ms = 116 ms.
    - 3GPP NR default HARQ RTT for TDD = 8 slots = 4 ms @ SCS 15 kHz.
-   - How many retransmissions can fit in one contact window (7 h)?
+   - How many retransmissions can fit in one contact window (~15–20 h above 5°)?
    - Document the HARQ timer breakage in a table.
 4. Analyse T300 / T310 timers (RRC Connection Request):
    - T300 default = 1000 ms. One-way delay to 5GC on Earth = 1280 ms. T300 expires before response arrives.
@@ -317,12 +317,15 @@ This table is the main contribution of Track S2.
 **Goal:** Assess interference between LunaNet AFS (2492.028 MHz) and 3GPP SFCGb1 (2503.5–2655 MHz).
 
 **Steps:**
-1. Read SFCG Recommendation 32-2R5 (Space Frequency Coordination Group, lunar bands).
-   Available: https://www.sfcg.org/documents/sfcg32-2r5.pdf
+1. Read SFCG Recommendation 32-2R6 (lunar frequency allocations, June 2025).
+   Also read SFCG 43-1 (June 2025): PNT band protection from surface 3GPP emissions.
+   Both available at: https://sfcgonline.org/resources/recommendations/
 2. Compute the guard band: 2503.5 − 2492.028 = 11.472 MHz.
 3. Compute the ACS (Adjacent Channel Selectivity) requirement for NR at 2503.5 MHz:
    - 3GPP TS 38.101-1, Table 7.3.3-1 (ACS for FR1). ACS ≥ 33 dB.
-4. Estimate whether a 11.472 MHz guard band is sufficient given the AFS signal bandwidth (2.048 MHz).
+4. Check whether SFCGb1 out-of-band emissions meet the SFCG 43-1 limit:
+   - Maximum aggregate unwanted power in 2483.5–2500 MHz: **−121 dB(W/m²/MHz)** at PNT antenna.
+   - 43-1 assumes ≥0.24 m UE-to-PNT antenna separation, ≥17 m BTS-to-PNT separation.
 5. Propose the minimum guard band needed and check against SFCG allocation.
 
 **Deliverable:** A 1-page coexistence analysis with a spectrum diagram showing AFS and SFCGb1.
@@ -339,7 +342,7 @@ the surface→relay dimension to your analysis.
 1. From S1's LOS mask, extract which fraction of the south-pole area has LOS to ELFO relay
    during the contact window (elevation ≥ 5°).
 2. Compute end-to-end link budget: surface BTS → relay → Earth DSN.
-   Parameters: BTS EIRP = 53 dBm, relay gain per LCRNS SRD (NTRS 20250002698 Table 2).
+   Parameters: BTS EIRP = 53 dBm, relay gain per LCRNS SRD (esc.gsfc.nasa.gov/projects/LCRNS — Table 2 of NTRS 20250002698 contains state vectors only, not link budgets).
 3. Map: for each surface pixel in LOS of relay, what is the received SNR at the DSN?
 
 ---
@@ -383,7 +386,7 @@ the surface→relay dimension to your analysis.
    Then install: `pip install dsns` (if published) or clone from https://github.com/ssloxford/DSNS
 
 5. **LunaNet DTN requirement** — LunaNet ICD v5, Section 4.1 (LunaNet requires BPv7).
-   NASA NTRS: https://ntrs.nasa.gov/citations/20220010064
+   NASA NTRS: https://ntrs.nasa.gov/citations/20230012811
 
 6. **Why this is a gap** — Search GitHub for "LCRNS contact plan" and "Moonlight contact plan."
    You will find nothing. This is the contribution.
@@ -414,17 +417,17 @@ the surface→relay dimension to your analysis.
 **Coordinate with Student 2** to reuse the `propagate_elfo()` implementation.
 
 **Steps:**
-1. Propagate the 2-satellite LCRNS constellation (elements from `data/orbits/lcrns_ref_constellation.json`)
+1. Propagate the 5-satellite LCRNS Reference Constellation 3.1 (elements from `data/orbits/lcrns_ref_constellation.json`)
    over 7 days (one week).
 2. Compute elevation from south pole for each satellite at each time step.
 3. Use `contact_windows()` to extract contact windows (min elevation = 5°).
-4. Compute: how often is at least one satellite visible? (Target: ≥ 95% per NTRS 20250002698 Table 5.)
+4. Compute: how often is at least one satellite visible? (Target: ≥ 95% coverage of lunar south pole per LCRNS mission requirements, esc.gsfc.nasa.gov/projects/LCRNS.)
 5. Also compute: how long is the Earth direct-to-surface link available?
    (Use `earth_elevation_angle_deg()` — Earth must be above 5° elevation AND terrain-unobstructed.)
 
 **Acceptance criteria:**
 - A 7-day contact window table (CSV): start, end, satellite, duration.
-- 2-sat coverage fraction ≥ 95% at south pole (validate against NTRS 20250002698).
+- 5-sat coverage fraction ≥ 95% at south pole (validate against LCRNS mission requirements).
 
 ---
 
@@ -442,12 +445,16 @@ the LCRNS/Moonlight constellation as of June 2025.
 4. Validate: load the exported contact plan into DSNS and run a simple bundle transfer.
    Verify delivery ratio = 1.0 for a bundle sent during a contact window.
 
-**Deliverable:** `data/orbits/lcrns_2sat_7day_contact_plan.csv` — a ready-to-use file
+**Deliverable:** `data/orbits/lcrns_5sat_7day_contact_plan.csv` — a ready-to-use file
 for any DTN researcher studying lunar scenarios. Commit this file to the repo.
 
 ---
 
-### S3-W5 — Router benchmark: CGR vs SABR vs epidemic (Week 5)
+### S3-W5 — Router benchmark: ION-CGR vs VolCgr vs epidemic (Week 5)
+
+**Note:** SABR is the CCSDS standard that *specifies* CGR — they are not two separate routers.
+  The meaningful comparison is between *CGR variants* (ION-CGR, VolCgr from A-SABR) and baseline epidemic.
+  See De Jonckère et al. (2025) for the VolCgr definition and benchmark methodology.
 
 **Steps:**
 1. Using the LCRNS 7-day contact plan, define three traffic profiles:
@@ -455,7 +462,7 @@ for any DTN researcher studying lunar scenarios. Commit this file to the repo.
    - **EVA video** (bursty): 1 Mbps for 30 min during EVA, then silent, bundle 100 MB, TTL 2 h.
    - **Emergency science** (low-priority): 100 kbps, preemptable by EVA traffic, TTL 7 days.
 
-2. Run each router (CGR, SABR, epidemic) over each traffic profile using DSNS.
+2. Run each router (ION-CGR, VolCgr, epidemic) over each traffic profile using DSNS.
    - Enable and disable custody transfer to see the effect.
 
 3. Collect metrics:
@@ -509,7 +516,7 @@ JOSS: https://joss.theoj.org/   SoftwareX: https://www.sciencedirect.com/journal
 **Paper structure:**
 1. Introduction — why a public lunar DTN benchmark is needed.
 2. The LCRNS contact plan generator — how it works, parameters, validation.
-3. Router benchmark — CGR vs SABR vs epidemic on three traffic profiles.
+3. Router benchmark — ION-CGR vs VolCgr (A-SABR) vs epidemic on three traffic profiles.
 4. Solar System Internet extension — where CGR scales and where it breaks.
 5. Conclusions.
 
