@@ -15,10 +15,10 @@ References validated here
 [E23]  Edwards et al. (2023), NTRS 20220015268.
 """
 
-import pytest
 import numpy as np
-from lunarcomms.propagation import friis, two_ray, diffraction
+import pytest
 
+from lunarcomms.propagation import diffraction, friis, two_ray
 
 # ---------------------------------------------------------------------------
 # Friis FSPL

@@ -8,16 +8,16 @@ Public data source
 -------------------
 LCRNS Reference Constellation 3.1 is published as a NASA Technical Report:
 
-    Guinn, J. R. et al. (2025). Lunar Communications Relay and Navigation
-    Services (LCRNS) Reference Constellation Design 3.1.
+    Ryden, G. and Volle, M. (2025). NASA Lunar Communications Relay and
+    Navigation Systems (LCRNS) Reference Constellation 3.1.
     NASA Technical Reports Server, NTRS 20250002698.
     https://ntrs.nasa.gov/citations/20250002698
 
 The report provides:
-  - Orbital elements for a 2-satellite ELFO constellation.
-  - Ground track / coverage statistics for the lunar south pole.
-  - Contact window analysis (Table 5, hourly coverage fractions).
-  - Frequency plan (S-band and Ka-band, compatible with SFCG REC 32-2R5).
+  - Keplerian elements for a 5-satellite ELFO constellation (Table 1).
+  - Cartesian state vectors at epoch 2027-03-01 (Table 2).
+  - Dynamical model parameters (Table 3).
+  - Frequency plan (S-band and Ka-band, compatible with SFCG REC 32-2R6).
 
 Moonlight / Lunar Pathfinder parameters (public ESA factsheet):
     https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Lunar_Pathfinder
@@ -28,8 +28,9 @@ This module loads the orbital elements from data/orbits/lcrns_ref_constellation.
 and provides convenience functions to propagate them and assess coverage.
 """
 
-import json
+import json  # noqa: F401
 from pathlib import Path
+
 import numpy as np
 
 _DATA_PATH = Path(__file__).parent.parent.parent / "data" / "orbits"
@@ -48,7 +49,7 @@ def load_lcrns_elements(
 
         The JSON file is pre-populated with values from NTRS 20250002698.
         Validate by checking that the perilune altitude of each satellite
-        is in the range 600–900 km (Table 3 of the report).
+        is in the range 1740–1760 km (derived from Table 1: a(1−e) − R_Moon).
 
     Returns
     -------
@@ -70,8 +71,8 @@ def coverage_fraction(
         Given elevation time series for all satellites in the constellation,
         compute the fraction of samples where max(elevation) ≥ min_elevation_deg.
 
-        Validation target (NTRS 20250002698, Table 5):
-            2-satellite constellation → ≥ 95% coverage at lunar south pole
+        Validation target (LCRNS mission requirements):
+            5-satellite constellation → ≥ 95% coverage at lunar south pole
             at min elevation 5°.
             1-satellite baseline → ~55–65% coverage.
 
@@ -86,7 +87,7 @@ def coverage_fraction(
     """
     raise NotImplementedError(
         "TODO (S2/S3, Week 4): compute LCRNS coverage fraction. "
-        "Validate against NTRS 20250002698 Table 5 (≥95% for 2-sat)."
+        "Validate: 5-sat constellation ≥ 95% south-pole coverage (LCRNS SRD)."
     )
 
 

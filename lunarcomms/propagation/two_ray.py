@@ -48,8 +48,9 @@ of regolith details — the antenna height dominates.
 """
 
 import numpy as np
-from .friis import fspl_db
-from ..regolith.dielectric import fresnel_coefficients
+
+from ..regolith.dielectric import fresnel_coefficients  # noqa: F401
+from .friis import fspl_db  # noqa: F401
 
 _C = 2.998e8  # m/s
 

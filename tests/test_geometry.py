@@ -12,9 +12,10 @@ SPICE kernels are present in data/kernels/. Run:
 before running the full test suite.
 """
 
-import pytest
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pytest
 
 _KERNELS_PRESENT = (
     Path("data/kernels/de440.bsp").exists()
@@ -25,8 +26,7 @@ requires_kernels = pytest.mark.skipif(
     reason="SPICE kernels not found in data/kernels/. Run data/download_kernels.py."
 )
 
-from lunarcomms.geometry import frames, horizon
-
+from lunarcomms.geometry import frames, horizon  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Earth–Moon geometry (requires SPICE kernels)

@@ -15,6 +15,6 @@ Usage
 >>> pl = two_ray.path_loss_db(5000, h_tx=30, h_rx=2, freq_hz=2.5e9)
 """
 
-from . import friis, two_ray, diffraction
+from . import diffraction, friis, two_ray
 
 __all__ = ["friis", "two_ray", "diffraction"]

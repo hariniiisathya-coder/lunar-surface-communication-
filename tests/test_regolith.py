@@ -14,10 +14,9 @@ References validated here
        doi:10.1029/2020JE006405. Fig. 4 (loss tangent vs frequency).
 """
 
-import pytest
 import numpy as np
-from lunarcomms.regolith import dielectric
 
+from lunarcomms.regolith import dielectric
 
 # ---------------------------------------------------------------------------
 # permittivity — Olhoeft & Strangway (1975), Table 2

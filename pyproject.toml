@@ -68,4 +68,6 @@ target-version = ["py310"]
 
 [tool.ruff]
 line-length = 88
-select      = ["E", "F", "W", "I"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]

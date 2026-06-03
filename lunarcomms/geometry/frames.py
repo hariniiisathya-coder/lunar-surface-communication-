@@ -58,10 +58,11 @@ SpiceyPy documentation:
 """
 
 from __future__ import annotations
+
 import numpy as np
 
 try:
-    import spiceypy as spice
+    import spiceypy as spice  # noqa: F401
     _SPICE_AVAILABLE = True
 except ImportError:
     _SPICE_AVAILABLE = False

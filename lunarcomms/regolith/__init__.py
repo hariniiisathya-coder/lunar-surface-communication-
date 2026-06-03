@@ -16,11 +16,11 @@ dielectric.fresnel_coefficients(rho, freq_ghz, theta_rad)
 """
 
 from .dielectric import (
-    permittivity,
-    loss_tangent,
     complex_permittivity,
-    skin_depth_m,
     fresnel_coefficients,
+    loss_tangent,
+    permittivity,
+    skin_depth_m,
 )
 
 __all__ = [

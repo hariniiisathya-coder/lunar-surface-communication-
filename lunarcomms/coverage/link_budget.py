@@ -36,8 +36,9 @@ Your map should show how terrain blockage reduces this to 2–4 km for
 typical south-pole morphology, and how BTS height affects the result.
 """
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 
 def compute_coverage_map(
