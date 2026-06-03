@@ -35,7 +35,7 @@ This repository builds that toolchain incrementally, documented by the survey.
 
 ## The three research tracks
 
-This repo supports three parallel summer internship tracks. All three share the same scenario: a lander/BTS at **Connecting Ridge** (lunar south pole), a relay in **LCRNS/Moonlight ELFO** (~7 300 km apoapsis, 10–12 h period), and Earth ~1.28 light-seconds away.
+This repo supports three parallel summer internship tracks. All three share the same scenario: a lander/BTS at **Connecting Ridge** (lunar south pole), a relay in **LCRNS/Moonlight ELFO** (~17 400 km apoapsis, ~30 h period), and Earth ~1.28 light-seconds away.
 
 ```
   ┌─────────┐
@@ -43,8 +43,8 @@ This repo supports three parallel summer internship tracks. All three share the 
   └────┬────┘
        │ X-band trunk
   ┌────┴─────────┐
-  │ LCRNS / Lunar│  ELFO: ~12 h period, apoapsis over south pole
-  │ Pathfinder   │  ~8 h visible per orbit from surface
+  │ LCRNS / Lunar│  ELFO: ~30 h period, apoapsis over south pole
+  │ Pathfinder   │  ~15–20 h visible per orbit from surface
   └────┬─────────┘
        │ S-band 2.5 GHz (SFCGb1 / LunaNet AFS 2492 MHz)
   ┌────┴────┐
@@ -211,7 +211,7 @@ The format for an entry is standard BibTeX:
   year    = {1975},
   volume  = {24},
   pages   = {394--408},
-  doi     = {10.1016/0012-821X(75)90102-2}
+  doi     = {10.1016/0012-821X(75)90146-6}
 }
 ```
 
@@ -256,7 +256,7 @@ A subset of the most important references for this project. Full list in `docs/s
 | 3GPP TR 38.811 | NTN channel model |
 | 3GPP TR 38.821 | NTN system study |
 | LunaNet ICD v5 | LunaNet Interoperability Specification |
-| SFCG REC 32-2R5 | Lunar frequency coordination |
+| SFCG REC 32-2R6 | Lunar frequency coordination |
 | CCSDS 734.2-B-2 | Bundle Protocol v7 specification |
 | LCRNS Ref. Const. 3.1 (NTRS 20250002698) | LCRNS ephemerides and orbit parameters |
-| Toonen et al. (2021) | Lunar surface-to-surface coverage baseline |
+| Toonen et al. (2022) | Lunar surface-to-surface coverage baseline |
