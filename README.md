@@ -217,16 +217,27 @@ The format for an entry is standard BibTeX:
 
 ---
 
+## How Tasks are Managed (`TASKS.md`)
+
+All technical objectives, student milestones, and testing requirements are centralized in `@/Users/e.baena/CascadeProjects/lunar-comms-survey/TASKS.md:1`. This file functions as the authoritative task tracker and code specification.
+
+The task structure spans a 10-week summer roadmap:
+1. **Week 0 — Common Ground:** All students collaborate to establish mathematical baselines (Earth-Moon delay, radio horizon calculations) and inspect the target terrain at Connecting Ridge.
+2. **Weeks 1–5 — Core Modules:** Individual weekly tasks defining exact files, equations, and unit tests to implement.
+3. **Weeks 6–10 — Integration & Paper Writing:** Combining the modules for end-to-end simulation, generating final GeoTIFF coverage maps, and drafting publication-ready survey chapters.
+
+Every task contains **explicit Acceptance Criteria** and key validation numbers that must be verified against published literature (e.g., matching [S20] loss tangent or [Ryden2025] LCRNS orbital elements) before committing.
+
+---
+
 ## Contributing
 
-This is a summer internship repository. Each student owns their track and is responsible for:
+This is an active research and summer internship repository. Contributors are responsible for:
 
-- Implementing the modules in their track (see `TASKS.md`).
-- Writing/extending the survey chapters corresponding to their track.
-- Adding any new references to `references.bib`.
-- Keeping tests green on every push.
-
-See `TASKS.md` for the full task breakdown and open items.
+- **Implementing assigned track modules** according to `@/Users/e.baena/CascadeProjects/lunar-comms-survey/TASKS.md:1`.
+- **Evolving the living survey** inside `@/Users/e.baena/CascadeProjects/lunar-comms-survey/docs/survey/` following the 5-part template.
+- **Validating modifications** locally via `pytest tests/ -v` and checking `ruff` linting compliance before pushing.
+- **Adding newly cited papers** directly to `@/Users/e.baena/CascadeProjects/lunar-comms-survey/docs/survey/references.bib:1`.
 
 ---
 
