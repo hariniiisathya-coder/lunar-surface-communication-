@@ -114,7 +114,7 @@
       "period_hr": 26.18,
       "perilune_altitude_km": 254,
       "apolune_altitude_km": 16941,
-      "apoapsis_direction": "north pole (serves far-side missions)",
+      "apoapsis_direction": "south pole (serves South Pole-Aitken / Chang'e-6,7,8 far-side missions)",
       "lunanet_compatible": false,
       "source": "https://en.wikipedia.org/wiki/Queqiao-2"
     }
