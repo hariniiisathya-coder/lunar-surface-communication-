@@ -267,12 +267,18 @@ what coverage area is achievable at the south pole:
 └────────────────────────────────────────────────────────┘
 ```
 
-**Critical point:** 5G is designed to connect UEs to an IP data network (N6 interface).
-It has no native DTN/store-and-forward capability and no native support for a relay
-satellite acting as an intermediate node between two 5G networks. Any DTN integration
-requires an explicit adaptation layer (N6 → IP → DTN gateway, or F1/N3 over CCSDS).
-This adaptation layer and its implications for coverage, SWaP, and protocol compliance
-is the central analytical contribution of Track S2.
+**Critical points:**
+1. 5G is designed to connect UEs to an IP data network (N6 interface). It has no native
+   DTN/store-and-forward capability. Any DTN integration requires an explicit adaptation
+   layer (N6 → IP → DTN gateway, or F1/N3 over CCSDS).
+2. The correct 3GPP framework for this network is a **Standalone Non-Public Network
+   (SNPN)** per TS 23.501 Section 4.11: a self-contained 5G network with its own PLMN
+   ID, no roaming, no connection to a public operator. The SNPN can optionally sync with
+   Earth-side operations during contact windows but is fully autonomous otherwise.
+3. The 5G stack requires concrete modifications that do not exist in the current specs:
+   extended eDRX, SNPN-specific OAM, UPF buffer policy for DTN drain, AMF/SMF state
+   persistence across power cycles, and a gNB minimal-beacon power mode. Enumerating
+   and justifying these modifications is the main contribution of Track S2.
 
 **Final deliverable:** Architecture comparison (transparent vs. regenerative) ×
 {coverage area, SWaP, 3GPP modifications needed, CCSDS integration point, blackout
@@ -311,11 +317,12 @@ management, spectrum compliance}, with recommendation and justification.
    (Coordinate with Student 3 — this is their core spec. You need it to reason about
    where BPv7 attaches to the 5G stack.)
 
-8. **5G system architecture** — 3GPP TS 23.501 v17.x, Section 4.2.
+8. **5G system architecture** — 3GPP TS 23.501 v17.x, Sections 4.2 and **4.11**.
    Free download: https://www.3gpp.org/ftp/Specs/archive/23_series/23.501/
-   Focus on the user-plane path (UE → gNB → UPF → N6 interface) and the control-plane
-   functions (AMF/SMF). You must be able to draw where user traffic exits the 5G system —
-   that is where Architecture A (N6→DTN gateway) and Architecture B (F1 over CCSDS) differ.
+   Section 4.2: user-plane path (UE → gNB → UPF → N6) and control-plane NFs.
+   **Section 4.11: Non-Public Networks (NPN) — specifically Standalone NPN (SNPN).**
+   This is the 3GPP framework that formally describes the lunar private network.
+   Understand SNPN PLMN ID format, UE access control, and SNPN-specific NAS procedures.
 
 9. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
    System-level LCRNS context: commercial payload strategy, constellation coverage, and
@@ -330,6 +337,12 @@ management, spectrum compliance}, with recommendation and justification.
     Modular BPv7 software stack with CCSDS SPP convergence layer. Relevant for
     understanding how to implement the CL adapter between gNB/UPF and the DTN node.
     Open-source: https://gitlab.com/d3tn/ud3tn
+
+12. **5G power saving** — 3GPP TS 38.331 v17.x, Section 5.7 (RRC power saving);
+    3GPP TS 24.501 v17.x, Section 5.3.7 (NAS eDRX).
+    Understand DRX, eDRX, and RRC_IDLE/INACTIVE states. In the lunar scenario, eDRX
+    cycles may need to be orders of magnitude longer than terrestrial values.
+    Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.331/
 
 ---
 
@@ -404,40 +417,57 @@ between 5G and CCSDS/DTN at the lander, and what each architecture requires from
 
 **Steps:**
 
-**Part A — Architecture A: N6 interface as the 5G/CCSDS boundary**
-1. Read 3GPP TS 23.501 Section 5.6 (N6 interface specification). The N6 is the reference
-   point between UPF and the external Data Network (DN). In standard 5G, the DN is an
-   IP network (internet, IMS, etc.). For Arch A, the DN is replaced by a DTN gateway.
-2. Identify every assumption TS 23.501 makes about the DN at N6:
-   - DN is always reachable (no concept of DN being unavailable).
-   - DN is IP-based (PDU Session Type = IPv4/IPv6/Ethernet).
-   - QoS enforcement ends at N6; what happens beyond is opaque to 5GC.
-3. For each assumption, document what breaks and what the DTN gateway must provide:
-   - DN unavailability during ELFO gap → UPF must buffer; gateway signals availability.
-   - IP PDUs must be encapsulated as BPv7 bundle payload (not native DTN PDU type).
-   - QoS-to-bundle-priority mapping must be implemented in the gateway (outside 3GPP).
-4. Identify the minimal gateway API: what signals must the DTN agent send to the UPF
-   (contact open/close, buffer full, priority drain) — and what 3GPP hooks exist for this
-   (PFCP session modification, N4 interface between SMF and UPF, TS 29.244).
+**Part A — SNPN configuration: the 3GPP framework for the lunar private network**
+1. Read TS 23.501 Section 4.11 (Non-Public Networks). Identify which SNPN-specific
+   procedures differ from a public PLMN deployment:
+   - PLMN ID assignment for the lunar network (no ITU-assigned MCC/MNC; propose a
+     private-use range and document the implications for UE provisioning).
+   - UE access control: only pre-provisioned rovers/suits may attach (no open access).
+   - NAS: no Home Network involvement; AUSF/UDM run entirely locally.
+   - OAM (O1/O2 interface): in connected mode, OAM data streams to Earth operations
+     centre; in isolated mode, alarms and KPIs are logged locally for later upload.
+2. Define the two OAM modes for the SNPN:
+   - **Connected mode** (ELFO in view): O1/O2 telemetry streamed to Earth ops via DTN;
+     remote configuration commands received from Earth (within contact window).
+   - **Isolated mode** (ELFO gap): local OAM only; alarms queued for DTN delivery;
+     no remote commands possible; pre-loaded automation scripts govern the network.
+3. Document which SNPN NAS procedures require modification for the lunar scenario and
+   which work as-is. Cite TS 23.501 Section 4.11 and TS 24.501 Section 4.5 (SNPN NAS).
 
-**Part B — Architecture B (only if S2-W2 link budget closes): F1-AP over CCSDS**
-5. Read 3GPP TS 38.473 (F1 Application Protocol). F1-AP is the interface between the
-   CU (at lander) and the DU (at ELFO satellite). It assumes low-latency transport.
-6. Identify which F1-AP procedures are latency-sensitive (cannot tolerate ~58 ms OWLT):
-   - UE Context Setup / Modification (RRC connection setup) — time-critical.
-   - DL/UL RRC message transfer — must be near-real-time for RRC procedures.
-   - Scheduling-related signalling — designed for sub-ms transport.
-7. Identify which F1-AP procedures can tolerate CCSDS OWLT:
-   - F1 Setup (initial configuration, done once).
-   - gNB-DU Configuration Update (periodic, not time-critical).
-8. Conclusion: which F1-AP procedures require modification or workarounds to run over
-   a 58 ms + intermittent CCSDS link? Document as a table: procedure | latency budget
-   | CCSDS-compatible? | modification needed.
+**Part B — Data lifecycle: from rover collection to Earth delivery**
+4. Trace the complete data path for a science data collection campaign:
+   - Rover sensor data → 5G UE PDU session → gNB → UPF (N6) → DTN gateway.
+   - DTN gateway: data categorised by type (science/telemetry/EVA video/housekeeping)
+     and mapped to bundle priority (cite `ccsds_sabr` for scheduling).
+   - During ELFO gap: bundles queued locally at the DTN agent.
+   - Contact window opens: bundles drained to ELFO by priority; large science datasets
+     may span multiple contact windows (bundle fragmentation / custody transfer).
+   - Earth DSN: bundles reassembled, delivered to mission operations centre.
+5. Identify where data can be lost (TTL expiry, buffer overflow) and what the
+   protocol must do: which data types are expendable (real-time video) vs. must be
+   delivered with custody (science observations, safety logs)?
 
-**Deliverable:** Interface analysis table:
-- Arch A: N6 assumptions broken by DTN integration + gateway requirements.
-- Arch B (conditional): F1-AP procedures vs. CCSDS OWLT compatibility.
-This feeds S2-W4 (blackout behaviour) and S2-W7 (DTN gateway specification).
+**Part C — Architecture A: N6 interface as the 5G/CCSDS boundary**
+6. Read TS 23.501 Section 5.6 (N6 interface). Identify every assumption it makes
+   about the DN that breaks for a DTN gateway:
+   - DN always reachable; DN is IP-based; QoS enforcement ends at N6.
+7. For each broken assumption, document what the DTN gateway must provide and what
+   3GPP hooks exist (PFCP/N4 between SMF and UPF, TS 29.244).
+
+**Part D — Architecture B (conditional on S2-W2 link budget): F1-AP over CCSDS**
+8. Read 3GPP TS 38.473 (F1-AP). Classify each procedure by latency budget:
+   - Latency-sensitive (cannot tolerate ~58 ms OWLT): UE Context Setup/Modification,
+     DL/UL RRC message transfer, scheduling-related signalling.
+   - Tolerable: F1 Setup (once-only), gNB-DU Configuration Update (periodic).
+   Build table: procedure | latency budget | CCSDS-compatible? | modification needed.
+   Only execute if Arch B link budget closed in S2-W2.
+
+**Deliverable:** Three tables:
+- SNPN configuration delta vs. public PLMN (Part A).
+- Data lifecycle diagram + custody/TTL policy per data type (Part B).
+- N6 assumptions broken + gateway API requirements (Part C).
+- F1-AP compatibility table (Part D, Arch B only if viable).
+All feed into S2-W4 (power states + blackout) and S2-W7 (DTN gateway spec).
 
 ---
 
@@ -473,28 +503,42 @@ and the CCSDS/DTN backhaul.
    - Keep active: surface gNB (rovers stay connected), AMF/SMF, UPF (buffering).
    - Estimate power saved by powering down the CCSDS relay hardware during gap.
 
-**Part B — Reconnection (contact window opens):**
-1. **DTN layer:** BPv7 agent detects contact (from S3 contact plan); opens CLAs.
-   Propose bundle transmission priority order:
-   1. Emergency/safety bundles (highest priority, shortest TTL).
-   2. Accumulated science/telemetry (largest volume).
-   3. 5GC state sync (UDM deltas, offline charging records).
-   4. Config/software updates from Earth (lowest priority).
-   Justify using CCSDS SABR priority mechanisms (cite `ccsds_sabr`).
-2. **5GC re-sync with Earth NFs during contact window:**
-   - Push offline charging/audit records to Earth-side operations centre.
-   - Pull updated configuration or software patches from Earth (low priority).
-   - Note: authentication (AUSF) and policy (PCF) are handled locally with
-     pre-provisioned credentials — no per-rover Earth re-authentication needed.
-   - Estimate signalling overhead of re-sync vs. available contact window bandwidth.
-3. **Energy management at reconnection:**
-   - Power-on sequence: relay RF frontend → DTN agent → bundle queue drain.
-   - Define a "contact window budget": fraction for buffered uplink data
-     vs. control-plane re-sync. Prioritise data drain over re-sync in short windows.
+**Part B — Energy save modes (sustained gap, no full power-down):**
+1. **Extended eDRX for rovers (UEs):** Rovers save battery by entering eDRX.
+   - Current 3GPP NTN Rel-17 max eDRX = 10,485.76 s (~2.9 h). Is this sufficient for
+     the worst-case gap from S3-W3? If not: document the required spec change
+     (TS 38.331 Section 6.3.2 eDRX parameters; TS 24.501 Section 5.3.7).
+   - During eDRX, gNB buffers DL data and pages rover at the paging window.
+     For local SNPN AMF, paging is fully local — no Earth contact needed.
+   - **Proposed modification:** eDRX cycle configurable up to worst-case gap duration.
+2. **gNB minimal-beacon mode:** With no active sessions, reduce gNB to SSB/SIB-only
+   broadcast; power down PDSCH/PUSCH amplifiers and UL receiver.
+   - Not a standard 3GPP mode — document as required modification; estimate power saving.
 
-**Deliverable:** "5G Blackout/Reconnection Protocol Table" — one row per layer/procedure:
-Layer | Procedure | Blackout behaviour | Reconnection behaviour | SWaP/energy implication.
-This is Table II of the paper and feeds directly into S2-W7.
+**Part C — Full power-down and resurrection (very long gap or planned maintenance):**
+3. **Power-down checkpoint procedure:**
+   - AMF: persist all UE contexts to non-volatile storage. Note: 3GPP TS 23.502
+     defines no standard Core power-down procedure — **required modification**.
+   - SMF: persist PDU session parameters. UPF: flush RAM buffers; confirm all bundles
+     persisted before shutdown. gNB: persist cell config (UEs will re-attach).
+4. **Resurrection sequence (power-up):**
+   - Order: storage restore → Core NFs online → gNB cell bring-up (SSB/SIB broadcast)
+     → rovers re-attach via RACH → PDU sessions re-established → DTN agent resumes
+     → (if ELFO in view) CCSDS link opens, bundle queue drains by priority.
+   - Estimate time-to-first-data per step; identify failure modes.
+
+**Part D — Contact window reconnection (standard case, no full power-down):**
+5. DTN agent opens CLAs; drains queue by SABR priority:
+   emergency → science/telemetry → SNPN OAM log upload → config updates from Earth.
+   Cite `ccsds_sabr`. Note: no per-rover re-authentication (AUSF pre-provisioned locally).
+   Define contact-window budget: fraction for data drain vs. OAM sync.
+
+**Deliverable:**
+- Power state machine diagram: Normal → Energy-Save (eDRX) → Deep-Sleep → Resurrection,
+  with transitions, triggers, and estimated power at each state.
+- "5G Lunar Protocol Modification Table": one row per required stack change:
+  Component | Standard behaviour | Proposed modification | Spec clause to modify.
+  This table is the core contribution of Track S2 — Table II of the paper.
 
 ---
 
@@ -655,17 +699,19 @@ and the latency/continuity characterisation — not RF propagation.
 Satellites for Lunar Surface Communications"
 
 **Paper structure:**
-1. Introduction — why 5G at the lunar south pole; the ELFO relay as the coverage enabler;
-   the SWaP constraint; 5G’s IP-centric design vs. DTN/CCSDS reality.
-2. ELFO orbit and coverage model — contact windows, gap periods, LCRNS constellation
-   (inputs from S3); coverage area as a function of payload type.
-3. Architecture A: transparent ELFO + surface 5G + N6→DTN gateway — protocol stack,
-   5GC minimum viable configuration, DTN adaptation layer, blackout management.
-4. Architecture B: regenerative ELFO as satellite gNB (NTN IAB) — F1/N3 over CCSDS,
-   3GPP modifications required, extended coverage area, SWaP cost.
-5. Comparison — coverage, SWaP, 3GPP compliance, CCSDS integration, spectrum coexistence
-   (LunaNet AFS vs. SFCGb1), blackout/reconnection behaviour.
-6. Conclusions — recommended architecture with justification; open 3GPP standardisation gaps.
+1. Introduction — why 5G at the lunar south pole; ELFO as coverage/backhaul enabler;
+   SWaP constraints; 5G’s IP-centric and always-connected design vs. lunar reality.
+2. System model — SNPN configuration; ELFO contact windows and gap model (from S3);
+   data lifecycle from rover collection to Earth delivery.
+3. Architecture A: transparent ELFO + surface 5G SNPN + N6→DTN gateway — protocol
+   stack, DTN adaptation layer, power state machine, spectrum coexistence.
+4. Architecture B (if viable per S2-W2 link budget): regenerative ELFO as satellite
+   gNB — F1/N3 over CCSDS, coverage extension, SWaP cost.
+5. Required 5G stack modifications — explicit table: eDRX extension, SNPN OAM,
+   UPF buffer policy for DTN, AMF/SMF state persistence, gNB beacon mode,
+   N6 DN availability signalling. For each: spec clause, required change, justification.
+6. Comparison and recommendation — coverage, SWaP, 3GPP compliance, CCSDS integration.
+7. Conclusions — recommended architecture; open 3GPP standardisation gaps.
 
 **Target venues:** IEEE Globecom NTN Workshop, IEEE Aerospace, or IEEE Communications Magazine.
 
