@@ -246,35 +246,36 @@ types), 3GPP "lunar readiness" table, and paper draft with architectural recomme
 4. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268
    ("3GPP Telecommunications Technology on the Moon"). Read Sections III-IV (link budget and coverage).
 
-4b. **Updated 5G lunar study** — Wagner et al. (2025), NTRS 20250001947
-    ("Envisioned Lunar Surface Comms Using 3GPP Cellular and Wi-Fi Technologies").
-    Companion to Edwards 2023; covers Artemis V multi-rover scenario, SWaP, Nokia/Axiom spacesuit
-    integration. Read alongside item 4 — this is the most current NASA Glenn assessment.
+5. **Updated 5G lunar study** — Wagner et al. (2025), NTRS 20250001947
+   ("Envisioned Lunar Surface Comms Using 3GPP Cellular and Wi-Fi Technologies").
+   Companion to Edwards 2023; covers Artemis V multi-rover scenario, SWaP, Nokia/Axiom spacesuit
+   integration. Read alongside item 4 — this is the most current NASA Glenn assessment.
 
-5. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
+6. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
    (AFS frequency 2492.028 MHz and its proximity to 3GPP SFCGb1 band.)
    NASA NTRS: https://ntrs.nasa.gov/citations/20230012811
 
-6. **DTN fundamentals** — CCSDS 734.2-B-2 (Bundle Protocol v7), Sections 1–3.
+7. **DTN fundamentals** — CCSDS 734.2-B-2 (Bundle Protocol v7), Sections 1–3.
    Free download: https://public.ccsds.org/Pubs/734x2b2.pdf
    (Coordinate with Student 3 — this is their core spec. You need it to reason about
    where BPv7 attaches to the 5G stack.)
 
-7. **5G system architecture** — 3GPP TS 23.501 v17.x, Section 4.2.
+8. **5G system architecture** — 3GPP TS 23.501 v17.x, Section 4.2.
+   Free download: https://www.3gpp.org/ftp/Specs/archive/23_series/23.501/
    Focus on the user-plane path (UE → gNB → UPF → N6 interface) and the control-plane
    functions (AMF/SMF). You must be able to draw where user traffic exits the 5G system —
    that is where DTN integration options A and B differ.
 
-8. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
+9. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
    System-level LCRNS context: commercial payload strategy, constellation coverage, and
    bent-pipe vs. regenerative trade-offs from the programme office perspective.
    https://ntrs.nasa.gov/citations/20250003321
 
-9. **3GPP Rel-19 NTN** — 3GPP Release 19 (completed Dec 2025).
-   NR_NTN_Ph3 work item on regenerative vs. transparent payload architecture for GEO/NGSO.
-   https://www.3gpp.org/specifications-technologies/releases/release-19
+10. **3GPP Rel-19 NTN** — 3GPP Release 19 (completed Dec 2025).
+    NR_NTN_Ph3 work item on regenerative vs. transparent payload architecture for GEO/NGSO.
+    https://www.3gpp.org/specifications-technologies/releases/release-19
 
-10. **µD3TN DTN stack** — Wischer et al. (2024), arXiv:2407.17166.
+11. **µD3TN DTN stack** — Wischer et al. (2024), arXiv:2407.17166.
     Modular BPv7 software stack with CCSDS SPP convergence layer. Relevant for
     understanding how to implement the CL adapter between gNB/UPF and the DTN node.
     Open-source: https://gitlab.com/d3tn/ud3tn
@@ -431,7 +432,8 @@ ELFO connectivity.
 
 **Steps:**
 1. For each option, trace the user-plane and control-plane paths on the architecture diagram.
-2. Replay a 7-day LCRNS visibility timeline (use Student 3's contact plan from S3-W3) and
+2. Replay a 7-day LCRNS visibility timeline (use Student 3's exported contact plan from
+   S3-W4 — the formatted DTN plan, not just the raw contact windows from S3-W3) and
    count, for each option: session-breaking events, signalling round-trips that cross the
    intermittent link, and data stalled awaiting contact.
 3. Score each option on: session continuity, end-to-end latency, resilience during loss of
@@ -575,7 +577,7 @@ their protocol analysis (S2-W3/W4) consumes these outputs.
 **File:** `lunarcomms/orbits/lcrns.py` — `export_contact_plan()`
 
 This is the **publishable gap** in the community. No public contact plan generator exists for
-the LCRNS/Moonlight constellation as of June 2025.
+the LCRNS/Moonlight constellation as of June 2026.
 
 **Steps:**
 1. Implement `export_contact_plan()` — convert contact windows to ION-DTN ionrc format.
@@ -692,17 +694,18 @@ All three students run the end-to-end pipeline:
 ```
 S1 GeoTIFF (coverage map)
    → link_closes[pixel] = margin_map > 0
-S2 ELFO elevation (contact availability)
+S3 ELFO contact windows (from S3-W3) + contact plan (from S3-W4)
    → relay_visible[t] = elevation_deg > 5
-S3 Contact plan (DTN delivery)
    → bundle_delivered = CGR(contact_plan, traffic)
+S2 Recommended architecture (from S2-W7)
+   → integration_option = {A | B | C}  [determines protocol stack used in demo]
 ```
 
 **Joint deliverable:**
 A single Jupyter notebook `notebooks/07-first-link-budget.ipynb` that:
 1. Loads S1's S-band coverage GeoTIFF.
-2. Overlays S2's ELFO contact windows.
-3. Runs one bundle delivery simulation in DSNS using S3's contact plan.
+2. Overlays S3's ELFO contact windows (relay_visible[t] from S3-W3 output).
+3. Runs one bundle delivery simulation in DSNS using S3's contact plan (from S3-W4).
 4. Reports: for a rover at a random south-pole location, what fraction of science data
    generated in a 7-day period is delivered to Earth DSN?
 
