@@ -445,19 +445,36 @@ This is Table I of the paper.
 
 ---
 
-### S2-W8 — End-to-end analysis with S1 coverage output (Week 8)
+### S2-W8 — Architectural synthesis and LunaNet/CCSDS compatibility check (Week 8)
 
-**Collaboration with S1.** Use the coverage GeoTIFFs produced by Student 1 to add
-the surface→relay dimension to your analysis.
+**Goal:** Consolidate the W3–W7 protocol analyses into a single, coherent architectural
+recommendation. Verify that the recommended option is compatible with LunaNet and CCSDS
+interoperability requirements. Prepare S2's contribution to the shared integration notebook.
+
+**Note on scope:** Computing per-pixel SNR maps or terrain-aware link budgets is S1's
+deliverable. S2's input to the end-to-end picture is the recommended protocol architecture
+and the latency/continuity characterisation — not RF propagation.
 
 **Steps:**
-1. From S1's LOS mask, extract which fraction of the south-pole area has LOS to ELFO relay
-   during the contact window (elevation ≥ 5°).
-2. Compute end-to-end link budget: surface BTS → relay → Earth DSN.
-   Parameters: BTS EIRP = 53 dBm, relay gain per LCRNS SRD (esc.gsfc.nasa.gov/projects/LCRNS — Table 2 of NTRS 20250002698 contains state vectors only, not link budgets).
-3. Map: for each surface pixel in LOS of relay, what is the received SNR at the DSN?
-4. Combine with S2-W7: for the recommended architecture, report end-to-end latency
-   distribution (surface → Earth) under the 7-day intermittency profile.
+1. Synthesise the findings from S2-W3 (procedure inventory), S2-W4 (PHY/timer analysis),
+   S2-W5 (spectrum coexistence), S2-W6 (payload trade-off), and S2-W7 (DTN integration
+   matrix) into a single architectural recommendation with written justification for each
+   design choice, citing the specific spec clauses that require modification.
+2. Verify LunaNet/CCSDS compatibility of the recommended architecture:
+   - Does the recommended DTN placement satisfy LunaNet ICD v5 Section 4.1 (BPv7 required)?
+   - Are the proposed 3GPP modifications within the scope of 3GPP Rel-19 NTN work items,
+     or do they require a new study item? Cite `3gpp_rel19_ntn`.
+   - Does the surface-to-relay frequency plan comply with SFCG 32-2R6 and SFCG 43-1
+     (from S2-W5)? Confirm guard band and out-of-band limits are met.
+3. Using S3's 7-day contact plan (S3-W4 output), compute the end-to-end latency
+   distribution (surface → Earth) under the recommended architecture:
+   - For each integration option (A/B/C), count: sessions broken per day, median and
+     p95 data-delivery latency, fraction of contact time lost to protocol overhead.
+   - This is the quantitative evidence for Table I of the paper.
+4. Prepare a 2-page summary document: "S2 contribution to integration notebook"
+   describing which architecture option to instantiate in `notebooks/07-first-link-budget.ipynb`
+   and what protocol parameters to configure (SCS, K_offset, HARQ timer values, DTN node
+   placement).
 
 ---
 

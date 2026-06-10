@@ -60,7 +60,7 @@ This repo supports three parallel summer internship tracks. All three share the 
 | Track | Owner | Key modules | Survey chapters |
 |-------|-------|-------------|----------------|
 | **S1** Surface RF propagation + coverage maps | Student 1 | `regolith`, `propagation`, `coverage`, `io` | 03, 04 |
-| **S2** 3GPP/5G stack adaptation for the Moon | Student 2 | `orbits`, `geometry`, `propagation` | 02, 05 |
+| **S2** 3GPP/5G protocol feasibility study (no implementation) | Student 2 | consumes S3 geometry outputs | 02, 05 |
 | **S3** DTN / Solar System Internet | Student 3 | `orbits`, `geometry` (contact plans) | 02, 06 |
 
 ---
