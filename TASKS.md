@@ -226,14 +226,15 @@ justified against SWaP. The research question is not "can 5G work?" but
 **Survey chapters:** `docs/survey/02-relay-architectures.md`, `docs/survey/05-3gpp-on-the-moon.md`
 
 **Research questions:**
-1. What is the minimum viable local 5GC (AMF/SMF/UPF subset) that supports a private lunar
-   surface network within realistic SWaP envelopes?
+1. Does the 5G NR link budget close from ELFO altitude (17,400 km) with realistic
+   satellite SWaP? This determines whether Architecture B (satellite gNB) is viable
+   at all, or whether Architecture A (surface-only 5G + CCSDS relay) is the only option.
 2. How does the 5G stack behave during ELFO blackouts (gap periods with no Earth link)
-   and during reconnection (contact window start) — layer by layer?
-3. At which point in the 5G stack should CCSDS/BPv7 integrate, and how does that choice
-   interact with SWaP and energy management?
-4. How should the system prioritise energy and bandwidth during a contact window
-   (emergency data vs telemetry vs state sync vs charging records)?
+   and during reconnection (contact window start) — layer by layer at the lander?
+3. What explicit adaptation layer is required to connect 5G’s IP-centric N6 interface
+   to CCSDS/BPv7, and what 3GPP assumptions does it violate?
+4. How should energy and bandwidth be prioritised during a contact window
+   (emergency data vs telemetry vs state sync vs config updates)?
 
 **Primary architectural fork: transparent vs. regenerative ELFO payload.**
 This choice determines what role the ELFO can play in the 5G system and therefore
@@ -286,10 +287,12 @@ management, spectrum compliance}, with recommendation and justification.
 
 2. **NTN fundamentals** — 3GPP TR 38.811 v15.4, Sections 5–6 (NTN channel model, LEO/GEO).
    Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.811/
+   *(Arch B only: only relevant if S2-W2 link budget shows satellite gNB is feasible.)*
 
 3. **NTN system design** — 3GPP TR 38.821 v16.x, Section 6 (solutions for NR NTN).
    Specifically: Section 6.2 (timing), 6.3 (HARQ), 6.4 (PRACH).
    Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.821/
+   *(Arch B only: CU/DU split and F1-AP over high-delay links. Skip if Arch B is not viable.)*
 
 4. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268
    ("3GPP Telecommunications Technology on the Moon"). Read Sections III-IV (link budget and coverage).
@@ -312,7 +315,7 @@ management, spectrum compliance}, with recommendation and justification.
    Free download: https://www.3gpp.org/ftp/Specs/archive/23_series/23.501/
    Focus on the user-plane path (UE → gNB → UPF → N6 interface) and the control-plane
    functions (AMF/SMF). You must be able to draw where user traffic exits the 5G system —
-   that is where DTN integration options A and B differ.
+   that is where Architecture A (N6→DTN gateway) and Architecture B (F1 over CCSDS) differ.
 
 9. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
    System-level LCRNS context: commercial payload strategy, constellation coverage, and
@@ -356,8 +359,10 @@ Architecture B). This frames the rest of the study correctly.
 **Part B — RAN SWaP (the real constraint):**
 4. **Surface gNB at lander** — estimate the power budget for the RF front-end:
    - Target coverage: ~5 km radius on lunar terrain at SFCGb1 (2.5 GHz).
-   - Required EIRP: use Friis + terrain margin from S1 as input; estimate BTS transmit
-     power and antenna gain. Document the PA + antenna + baseband SWaP breakdown.
+   - Required EIRP: use Edwards 2023 (NTRS 20220015268) Table IV link parameters as
+     baseline (S1 terrain-aware outputs will refine this in W6 when available).
+   - Estimate BTS transmit power, antenna gain, PA efficiency, baseband compute.
+   - Document the PA + antenna + baseband SWaP breakdown.
    - This is where the lander power budget is consumed — not the Core.
 
 5. **Satellite gNB on ELFO (Architecture B only) — link budget feasibility check:**
@@ -383,31 +388,56 @@ key finding that eliminates or severely constrains Arch B — document with numb
 
 ---
 
-### S2-W3 — Protocol deep-dive: NR/NTN procedure inventory (Week 3)
+### S2-W3 — 3GPP interface analysis at the lander integration point (Week 3)
 
-**Goal:** Build a systematic inventory of every 3GPP NR procedure and parameter that depends on
-terrestrial assumptions (delay, Doppler, continuous connectivity) and classify each as
-works-as-is / needs reconfiguration / needs specification change for the lunar ELFO scenario.
+**Goal:** Identify exactly which 3GPP interfaces and procedures are at the boundary
+between 5G and CCSDS/DTN at the lander, and what each architecture requires from them.
 
-**Note:** the ELFO propagator is implemented by Student 3 (S3-W3, shared issue #6–7).
-Request the Doppler/delay time series and contact window table from Student 3 — your work
-starts from those numbers, not from code.
+**Key clarification on scope:**
+- The 5G NR surface link (rover ↔ lander gNB) has microsecond delays and negligible
+  Doppler. **No NR access procedure needs modification** — standard NR works as-is.
+- The ELFO geometry (Doppler, delay) is irrelevant to the surface NR link.
+- The integration challenge is at the **lander node**, where 5G terminates and CCSDS begins.
+- For Architecture B: NTN analysis of the ELFO satellite gNB is **conditional** on the
+  S2-W2 link budget result. If the link budget does not close, Arch B is not viable and
+  this analysis reduces to Arch A only.
 
 **Steps:**
-1. Go through 3GPP TS 38.300 + TR 38.821 and list every procedure touched by NTN Rel-17:
-   timing advance (TA), HARQ, scheduling offsets (K_offset), RACH/PRACH, RLC/PDCP timers,
-   RRC timers (T300/T301/T310/T311), cell selection/reselection, paging, TAU.
-2. For each procedure, record: terrestrial assumption → Rel-17 NTN extension (GEO max
-   ~270 ms) → lunar ELFO requirement (from S3's geometry) → gap.
-3. Identify which gaps are solvable by configuration (e.g., extended K_offset values) vs.
-   which require specification changes (e.g., timer ranges that max out below lunar delay)
-   vs. which require architectural workarounds (e.g., local 5GC — feeds S2-W7).
-4. Document the justification for each proposed modification, citing the exact spec clause.
 
-**Deliverable:** "NR/NTN procedure inventory" table — input to the blackout protocol
-analysis (S2-W4) and the DTN integration trade-off (S2-W7). Each row: procedure,
-spec clause, terrestrial assumption, lunar/gap scenario, verdict, required modification,
-justification.
+**Part A — Architecture A: N6 interface as the 5G/CCSDS boundary**
+1. Read 3GPP TS 23.501 Section 5.6 (N6 interface specification). The N6 is the reference
+   point between UPF and the external Data Network (DN). In standard 5G, the DN is an
+   IP network (internet, IMS, etc.). For Arch A, the DN is replaced by a DTN gateway.
+2. Identify every assumption TS 23.501 makes about the DN at N6:
+   - DN is always reachable (no concept of DN being unavailable).
+   - DN is IP-based (PDU Session Type = IPv4/IPv6/Ethernet).
+   - QoS enforcement ends at N6; what happens beyond is opaque to 5GC.
+3. For each assumption, document what breaks and what the DTN gateway must provide:
+   - DN unavailability during ELFO gap → UPF must buffer; gateway signals availability.
+   - IP PDUs must be encapsulated as BPv7 bundle payload (not native DTN PDU type).
+   - QoS-to-bundle-priority mapping must be implemented in the gateway (outside 3GPP).
+4. Identify the minimal gateway API: what signals must the DTN agent send to the UPF
+   (contact open/close, buffer full, priority drain) — and what 3GPP hooks exist for this
+   (PFCP session modification, N4 interface between SMF and UPF, TS 29.244).
+
+**Part B — Architecture B (only if S2-W2 link budget closes): F1-AP over CCSDS**
+5. Read 3GPP TS 38.473 (F1 Application Protocol). F1-AP is the interface between the
+   CU (at lander) and the DU (at ELFO satellite). It assumes low-latency transport.
+6. Identify which F1-AP procedures are latency-sensitive (cannot tolerate ~58 ms OWLT):
+   - UE Context Setup / Modification (RRC connection setup) — time-critical.
+   - DL/UL RRC message transfer — must be near-real-time for RRC procedures.
+   - Scheduling-related signalling — designed for sub-ms transport.
+7. Identify which F1-AP procedures can tolerate CCSDS OWLT:
+   - F1 Setup (initial configuration, done once).
+   - gNB-DU Configuration Update (periodic, not time-critical).
+8. Conclusion: which F1-AP procedures require modification or workarounds to run over
+   a 58 ms + intermittent CCSDS link? Document as a table: procedure | latency budget
+   | CCSDS-compatible? | modification needed.
+
+**Deliverable:** Interface analysis table:
+- Arch A: N6 assumptions broken by DTN integration + gateway requirements.
+- Arch B (conditional): F1-AP procedures vs. CCSDS OWLT compatibility.
+This feeds S2-W4 (blackout behaviour) and S2-W7 (DTN gateway specification).
 
 ---
 
@@ -438,9 +468,10 @@ and the CCSDS/DTN backhaul.
    - Mobility (AMF): local — works offline.
    - **Finding:** surface network continues uninterrupted during gap. Document per procedure.
 3. **Energy management at blackout onset:**
-   - Power down: ELFO RF front-end + modem (no contact — no need to listen).
-   - Keep active: gNB (surface coverage), AMF/SMF, UPF (buffering).
-   - Estimate power saved by powering down relay hardware during gap.
+   - Power down: lander CCSDS modem and RF frontend toward ELFO (no contact — no
+     need to transmit or listen on the relay link).
+   - Keep active: surface gNB (rovers stay connected), AMF/SMF, UPF (buffering).
+   - Estimate power saved by powering down the CCSDS relay hardware during gap.
 
 **Part B — Reconnection (contact window opens):**
 1. **DTN layer:** BPv7 agent detects contact (from S3 contact plan); opens CLAs.
@@ -451,9 +482,11 @@ and the CCSDS/DTN backhaul.
    4. Config/software updates from Earth (lowest priority).
    Justify using CCSDS SABR priority mechanisms (cite `ccsds_sabr`).
 2. **5GC re-sync with Earth NFs during contact window:**
-   - Push offline charging records; pull updated PCF policies; re-authenticate
-     any rovers whose credentials expired (AUSF on Earth).
-   - Estimate signalling overhead vs. available contact window bandwidth.
+   - Push offline charging/audit records to Earth-side operations centre.
+   - Pull updated configuration or software patches from Earth (low priority).
+   - Note: authentication (AUSF) and policy (PCF) are handled locally with
+     pre-provisioned credentials — no per-rover Earth re-authentication needed.
+   - Estimate signalling overhead of re-sync vs. available contact window bandwidth.
 3. **Energy management at reconnection:**
    - Power-on sequence: relay RF frontend → DTN agent → bundle queue drain.
    - Define a "contact window budget": fraction for buffered uplink data
@@ -591,7 +624,7 @@ deliverable. S2's input to the end-to-end picture is the recommended protocol ar
 and the latency/continuity characterisation — not RF propagation.
 
 **Steps:**
-1. Synthesise the findings from S2-W3 (procedure inventory), S2-W4 (blackout/reconnection),
+1. Synthesise the findings from S2-W3 (interface analysis), S2-W4 (blackout/reconnection),
    S2-W5 (spectrum coexistence), S2-W6 (architecture comparison table), and S2-W7 (DTN
    gateway specification) into a single architectural recommendation with written
    justification for each design choice, citing the specific spec clauses.
@@ -603,7 +636,8 @@ and the latency/continuity characterisation — not RF propagation.
      (from S2-W5)? Confirm guard band and out-of-band limits are met.
 3. Using S3's 7-day contact plan (S3-W4 output), compute the end-to-end latency
    distribution (surface → Earth) under the recommended architecture:
-   - For Arch A and Arch B: sessions broken per day, median and p95 data-delivery
+   - For the viable architecture(s) from S2-W6 (Arch A always; Arch B only if link
+     budget closed in S2-W2): sessions broken per day, median and p95 data-delivery
      latency, fraction of contact time lost to protocol overhead.
    - This is the quantitative evidence for the main comparison table.
 4. Prepare a 2-page summary document: "S2 contribution to integration notebook"
