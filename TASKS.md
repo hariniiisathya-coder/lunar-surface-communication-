@@ -211,10 +211,16 @@ no existing lunar coverage paper includes this.
 ## Student 2 — Assessment of 5G Integration with DTN/CCSDS Using ELFO Relay Satellites
 
 **Track owner:** Student 2
-**Modules:** `lunarcomms/orbits/elfo.py`, `lunarcomms/geometry/frames.py`
+**Nature of the track:** This is a **protocol feasibility study**, not an implementation track.
+The contribution is an in-depth analysis of the 3GPP NR/NTN protocol stack: which procedures,
+timers, and assumptions break under lunar ELFO conditions, what modifications would be required,
+the justification for each, and how 5G can be made compatible with DTN/CCSDS for the three
+integration options. All orbital geometry inputs (Doppler/delay time series, contact windows)
+are consumed from Student 3's propagator outputs — Student 2 does not write simulation code.
 **Survey chapters:** `docs/survey/02-relay-architectures.md`, `docs/survey/05-3gpp-on-the-moon.md`
 **Research question:** How should the 5G RAN integrate with DTN/CCSDS when ELFO satellites
 provide intermittent backhaul — and at which point in the 5G stack should DTN sit?
+Which 3GPP procedures must be modified for feasibility, and with what justification?
 **Integration options under study:**
   (A) DTN above the UPF (full 5G Core retained),
   (B) DTN after the gNB (reduced Core dependency),
@@ -300,22 +306,30 @@ LEO (delay <5 ms); the lunar ELFO delay regime is dominated by altitude, not Dop
 
 ---
 
-### S2-W3 — Implement ELFO propagator (Week 3)
+### S2-W3 — Protocol deep-dive: NR/NTN procedure inventory (Week 3)
 
-**Files:** `lunarcomms/orbits/elfo.py` — `keplerian_state()`, `propagate_elfo()`, `south_pole_elevation_deg()`
+**Goal:** Build a systematic inventory of every 3GPP NR procedure and parameter that depends on
+terrestrial assumptions (delay, Doppler, continuous connectivity) and classify each as
+works-as-is / needs reconfiguration / needs specification change for the lunar ELFO scenario.
+
+**Note:** the ELFO propagator is implemented by Student 3 (S3-W3, shared issue #6–7).
+Request the Doppler/delay time series and contact window table from Student 3 — your work
+starts from those numbers, not from code.
 
 **Steps:**
-1. Implement `keplerian_state()` — Keplerian → Cartesian. See Bate et al. (1971) Section 2.4.
-2. Implement `propagate_elfo()` — solve Kepler's equation with Newton-Raphson (≤ 10 iterations).
-3. Implement `south_pole_elevation_deg()`.
-4. Run `pytest tests/test_geometry.py::TestELFOGeometry`.
-5. Propagate for 48 h. Plot elevation angle from south pole vs time.
-   - You should see ~1.6 peaks per 48 h (one per 30-h orbit), each lasting ~15–20 h above 5°.
-   - Compare against LCRNS Reference Constellation 3.1 (NTRS 20250002698): verify period ≈ 30 h and elevation peak geometry matches Table~1 elements.
+1. Go through 3GPP TS 38.300 + TR 38.821 and list every procedure touched by NTN Rel-17:
+   timing advance (TA), HARQ, scheduling offsets (K_offset), RACH/PRACH, RLC/PDCP timers,
+   RRC timers (T300/T301/T310/T311), cell selection/reselection, paging, TAU.
+2. For each procedure, record: terrestrial assumption → Rel-17 NTN extension (GEO max
+   ~270 ms) → lunar ELFO requirement (from S3's geometry) → gap.
+3. Identify which gaps are solvable by configuration (e.g., extended K_offset values) vs.
+   which require specification changes (e.g., timer ranges that max out below lunar delay)
+   vs. which require architectural workarounds (e.g., local 5GC — feeds S2-W7).
+4. Document the justification for each proposed modification, citing the exact spec clause.
 
-**Acceptance criteria:**
-- `pytest tests/test_geometry.py::TestELFOGeometry` → all passing.
-- Elevation plot shows period ≈ 30 h and ~15–20 h contact windows, consistent with Table~1 elements of NTRS 20250002698.
+**Deliverable:** "NR/NTN procedure inventory" table — the backbone of the lunar readiness
+table (S2-W4) and the architectural analysis (S2-W7). Each row: procedure, spec clause,
+terrestrial/NTN assumption, lunar value, verdict, required modification, justification.
 
 ---
 
@@ -324,7 +338,7 @@ LEO (delay <5 ms); the lunar ELFO delay regime is dominated by altitude, not Dop
 **Goal:** Identify which 3GPP NR subcarrier spacings and timer settings are viable under lunar ELFO Doppler and delay, compared to the 3GPP TR 38.821 LEO-600 baseline.
 
 **Steps:**
-1. Extract Doppler time series from your ELFO propagator:
+1. Obtain the Doppler time series from Student 3's ELFO propagator output:
    - Radial velocity = d/dt(|position|). Convert to frequency offset: Δf = v_radial/c · f.
 2. Analyse per 3GPP TR 38.821, Section 6.2.1:
    - Which subcarrier spacings (SCS 15 / 30 / 60 kHz) can tolerate Δf from Step 1?
@@ -530,10 +544,16 @@ Satellites for Lunar Surface Communications"
 ### S3-W3 — LCRNS ELFO propagation + contact windows (Week 3)
 
 **Files:**
-- `lunarcomms/orbits/elfo.py` — `contact_windows()` (implement after S2-W3)
+- `lunarcomms/orbits/elfo.py` — `keplerian_state()`, `propagate_elfo()`, `south_pole_elevation_deg()`, `contact_windows()`
 - `lunarcomms/geometry/frames.py` — `earth_elevation_angle_deg()`
 
-**Coordinate with Student 2** to reuse the `propagate_elfo()` implementation.
+**You own the ELFO propagator** (issues #6–7): implement `keplerian_state()` (Keplerian →
+Cartesian, Bate et al. 1971 Section 2.4), `propagate_elfo()` (Kepler's equation via
+Newton-Raphson, ≤ 10 iterations), and `south_pole_elevation_deg()`. Validate with
+`pytest tests/test_geometry.py::TestELFOGeometry` and against NTRS 20250002698 Table 1
+(period ≈ 30 h, ~15–20 h contact windows above 5°).
+**Deliver to Student 2** the Doppler/delay time series and the contact window table —
+their protocol analysis (S2-W3/W4) consumes these outputs.
 
 **Steps:**
 1. Propagate the 5-satellite LCRNS Reference Constellation 3.1 (elements from `data/orbits/lcrns_ref_constellation.json`)
@@ -699,10 +719,10 @@ This is the end-to-end demonstration that connects all three tracks into a singl
 | 3 | Implement horizon raycasting (vectorised) | S1 | W4 |
 | 4 | Implement `compute_coverage_map()` + GeoTIFF output | S1 | W5–6 |
 | 5 | Implement `load_dem()` + `extract_profile()` + `sample_loss_tangent_params()` | S1 | W2–7 |
-| 6 | Implement `keplerian_state()` + Kepler equation solver | S2/S3 | W3 |
-| 7 | Implement `propagate_elfo()` + `south_pole_elevation_deg()` | S2/S3 | W3 |
-| 8 | Implement `load_lcrns_elements()` + `coverage_fraction()` | S2/S3 | W4 |
-| 9 | 3GPP NR Rel-17 lunar readiness table (PHY + MAC + RRC) | S2 | W4–5 |
+| 6 | Implement `keplerian_state()` + Kepler equation solver | S3 | W3 |
+| 7 | Implement `propagate_elfo()` + `south_pole_elevation_deg()` | S3 | W3 |
+| 8 | Implement `load_lcrns_elements()` + `coverage_fraction()` | S3 | W4 |
+| 9 | NR/NTN procedure inventory + Rel-17 lunar readiness table (PHY + MAC + RRC), with required modifications and justification | S2 | W3–5 |
 | 10 | Implement `contact_windows()` + `export_contact_plan()` | S3 | W4 |
 | 11 | Run CGR/SABR/epidemic benchmark on LCRNS contact plan | S3 | W5 |
 | 12 | Write survey chapter `03-rf-propagation.md` | S1 | W9 |
