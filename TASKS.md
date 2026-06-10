@@ -208,12 +208,20 @@ no existing lunar coverage paper includes this.
 
 ---
 
-## Student 2 — 3GPP/5G Stack Adaptation for the Moon
+## Student 2 — Assessment of 5G Integration with DTN/CCSDS Using ELFO Relay Satellites
 
 **Track owner:** Student 2
 **Modules:** `lunarcomms/orbits/elfo.py`, `lunarcomms/geometry/frames.py`
 **Survey chapters:** `docs/survey/02-relay-architectures.md`, `docs/survey/05-3gpp-on-the-moon.md`
-**Final deliverable:** Layer-by-layer 3GPP "lunar readiness" table + Doppler/delay analysis + paper draft.
+**Research question:** How should the 5G RAN integrate with DTN/CCSDS when ELFO satellites
+provide intermittent backhaul — and at which point in the 5G stack should DTN sit?
+**Integration options under study:**
+  (A) DTN above the UPF (full 5G Core retained),
+  (B) DTN after the gNB (reduced Core dependency),
+  (C) local lunar 5G Core with DTN backhaul to Earth.
+**Payload options under study:** transparent (bent-pipe) vs. regenerative ELFO relay.
+**Final deliverable:** Architectural trade-off analysis (3 DTN integration points × 2 payload
+types), 3GPP "lunar readiness" table, and paper draft with architectural recommendations.
 
 ---
 
@@ -232,9 +240,38 @@ no existing lunar coverage paper includes this.
 4. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268
    ("3GPP Telecommunications Technology on the Moon"). Read Sections III-IV (link budget and coverage).
 
+4b. **Updated 5G lunar study** — Wagner et al. (2025), NTRS 20250001947
+    ("Envisioned Lunar Surface Comms Using 3GPP Cellular and Wi-Fi Technologies").
+    Companion to Edwards 2023; covers Artemis V multi-rover scenario, SWaP, Nokia/Axiom spacesuit
+    integration. Read alongside item 4 — this is the most current NASA Glenn assessment.
+
 5. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
    (AFS frequency 2492.028 MHz and its proximity to 3GPP SFCGb1 band.)
    NASA NTRS: https://ntrs.nasa.gov/citations/20230012811
+
+6. **DTN fundamentals** — CCSDS 734.2-B-2 (Bundle Protocol v7), Sections 1–3.
+   Free download: https://public.ccsds.org/Pubs/734x2b2.pdf
+   (Coordinate with Student 3 — this is their core spec. You need it to reason about
+   where BPv7 attaches to the 5G stack.)
+
+7. **5G system architecture** — 3GPP TS 23.501 v17.x, Section 4.2.
+   Focus on the user-plane path (UE → gNB → UPF → N6 interface) and the control-plane
+   functions (AMF/SMF). You must be able to draw where user traffic exits the 5G system —
+   that is where DTN integration options A and B differ.
+
+8. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
+   System-level LCRNS context: commercial payload strategy, constellation coverage, and
+   bent-pipe vs. regenerative trade-offs from the programme office perspective.
+   https://ntrs.nasa.gov/citations/20250003321
+
+9. **3GPP Rel-19 NTN** — 3GPP Release 19 (completed Dec 2025).
+   NR_NTN_Ph3 work item on regenerative vs. transparent payload architecture for GEO/NGSO.
+   https://www.3gpp.org/specifications-technologies/releases/release-19
+
+10. **µD3TN DTN stack** — Wischer et al. (2024), arXiv:2407.17166.
+    Modular BPv7 software stack with CCSDS SPP convergence layer. Relevant for
+    understanding how to implement the CL adapter between gNB/UPF and the DTN node.
+    Open-source: https://gitlab.com/d3tn/ud3tn
 
 ---
 
@@ -308,7 +345,8 @@ LEO (delay <5 ms); the lunar ELFO delay regime is dominated by altitude, not Dop
 **Deliverable:** A table "3GPP NR Rel-17 Lunar Readiness" with columns:
   Layer | Parameter | LEO-600 (TR 38.821) | ELFO Apolune | ELFO Perilune | Verdict (✓/⚠/✗)
 
-This table is the main contribution of Track S2.
+This table feeds the payload comparison (S2-W6) and the DTN integration trade-off (S2-W7) —
+together they form the main contribution of Track S2.
 
 ---
 
@@ -333,7 +371,65 @@ This feeds into Section V of the Track S2 paper.
 
 ---
 
-### S2-W6–8 — Surface-to-ELFO link budget using S1 coverage output (Weeks 6–8)
+### S2-W6 — Transparent vs. regenerative ELFO payloads (Week 6)
+
+**Goal:** Quantify the Physical Layer and SWaP implications of the two relay payload options.
+
+**Steps:**
+1. Define the two payload models:
+   - **Transparent (bent-pipe):** the relay amplifies and re-transmits without demodulating.
+     The PHY link spans end-to-end (surface → ELFO → Earth): Doppler and delay accumulate
+     across legs, and all intelligence resides on the surface or on Earth. Lower SWaP.
+   - **Regenerative (lightweight):** the relay demodulates, decodes, and re-modulates; it can
+     optionally host a BPv7 node for onboard store-and-forward. Each hop terminates its own
+     PHY, so Doppler is corrected per hop. Higher SWaP (OBC + storage).
+2. For each payload type, recompute the S2-W4 PHY table:
+   - Transparent: combined Doppler across both legs; total one-way delay 58 ms + 1280 ms.
+   - Regenerative: per-hop Doppler (≈2.3 kHz during contact window) and per-hop delay budget;
+     HARQ can terminate at the relay instead of on Earth.
+3. Estimate the SWaP delta of the regenerative option:
+   - Onboard storage requirement: use the peak-buffer metric from Student 3's DSNS runs
+     (S3-W5) as the sizing driver.
+   - Processing and power: document qualitatively from published smallsat OBC figures, citing
+     sources (do not invent numbers).
+4. Build the comparison table: payload type × {Doppler handling, timing, HARQ feasibility,
+   onboard storage, SWaP, DTN support}.
+
+**Deliverable:** Payload trade-off table — Section IV of the paper.
+
+---
+
+### S2-W7 — DTN integration points in the 5G stack (Week 7)
+
+**Goal:** Evaluate the three candidate 5G–DTN convergence architectures under intermittent
+ELFO connectivity.
+
+**The three options:**
+- **Option A — DTN above the UPF:** full 5G Core retained; BPv7 runs over the N6 interface.
+  Maximum 5G feature preservation, but every Core transaction crosses the intermittent
+  backhaul unless the Core is local.
+- **Option B — DTN after the gNB:** user-plane traffic is extracted at (or just above) the
+  gNB and handed to a BPv7 agent, bypassing most of the Core. Reduced SWaP and Core
+  dependency, but session management and QoS must be handled outside 3GPP procedures.
+- **Option C — Local lunar 5G Core + DTN backhaul:** a lightweight 5GC runs at the lander;
+  DTN is used only on the trunk to Earth. Sessions terminate locally in milliseconds
+  (solves the T300/T310 breakage from S2-W4); the DTN tunnel never carries 3GPP signalling.
+
+**Steps:**
+1. For each option, trace the user-plane and control-plane paths on the architecture diagram.
+2. Replay a 7-day LCRNS visibility timeline (use Student 3's contact plan from S3-W3) and
+   count, for each option: session-breaking events, signalling round-trips that cross the
+   intermittent link, and data stalled awaiting contact.
+3. Score each option on: session continuity, end-to-end latency, resilience during loss of
+   Earth connectivity, CCSDS/LunaNet interoperability, and SWaP footprint on surface assets.
+4. Build the 3×5 trade-off matrix (integration point × metric).
+
+**Deliverable:** Integration trade-off matrix + recommended architecture with justification.
+This is Table I of the paper.
+
+---
+
+### S2-W8 — End-to-end analysis with S1 coverage output (Week 8)
 
 **Collaboration with S1.** Use the coverage GeoTIFFs produced by Student 1 to add
 the surface→relay dimension to your analysis.
@@ -344,6 +440,8 @@ the surface→relay dimension to your analysis.
 2. Compute end-to-end link budget: surface BTS → relay → Earth DSN.
    Parameters: BTS EIRP = 53 dBm, relay gain per LCRNS SRD (esc.gsfc.nasa.gov/projects/LCRNS — Table 2 of NTRS 20250002698 contains state vectors only, not link budgets).
 3. Map: for each surface pixel in LOS of relay, what is the received SNR at the DSN?
+4. Combine with S2-W7: for the recommended architecture, report end-to-end latency
+   distribution (surface → Earth) under the 7-day intermittency profile.
 
 ---
 
@@ -351,12 +449,20 @@ the surface→relay dimension to your analysis.
 
 **Survey chapter to write:** `docs/survey/05-3gpp-on-the-moon.md`
 
+**Paper title (working):** "Assessment of 5G Integration with DTN/CCSDS Using ELFO Relay
+Satellites for Lunar Surface Communications"
+
 **Paper structure:**
-1. Introduction — why 3GPP NTN was designed for LEO and what breaks on the Moon.
-2. ELFO geometry — Doppler and delay time series, comparison with TR 38.821.
-3. PHY layer — SCS selection, BLER vs Doppler, frequency coexistence.
-4. MAC/RRC layer — HARQ RTT, timer breakage, 5GC placement.
-5. Conclusions and recommendations for a 3GPP Release targeting lunar operations.
+1. Introduction — terrestrial 5G assumptions (continuous connectivity, low latency) vs.
+   lunar constraints (intermittent ELFO backhaul, SWaP, spectrum).
+2. ELFO geometry — Doppler and delay time series, comparison with TR 38.821 LEO-600.
+3. PHY layer — SCS selection, HARQ/timer breakage, frequency coexistence (LunaNet AFS
+   vs. SFCGb1), transparent vs. regenerative payload implications.
+4. 5G–DTN integration — the three DTN placement options, session continuity under the
+   7-day intermittency replay, trade-off matrix.
+5. System-level trade-offs — latency, resilience, complexity, SWaP.
+6. Conclusions — recommended architecture and required 5G stack modifications for
+   LunaNet/LCRNS compatibility.
 
 **Target venues:** IEEE Globecom NTN Workshop, IEEE Aerospace, or IEEE Communications Magazine.
 
@@ -390,6 +496,19 @@ the surface→relay dimension to your analysis.
 
 6. **Why this is a gap** — Search GitHub for "LCRNS contact plan" and "Moonlight contact plan."
    You will find nothing. This is the contribution.
+
+7. **Improved CGR** — De Jonckère & Fraire (2024), arXiv:2410.15546.
+   Introduces contact-splitting and edge-pruning for capacity/buffer-aware CGR (FEAP-CB).
+   Read before S3-W4: the ISL capacity constraint directly motivates these techniques.
+   https://arxiv.org/abs/2410.15546
+
+8. **Lunar DTN MARL** — Vitale, Fraire et al. (2025), arXiv:2510.20436.
+   Decentralized GAT-MARL routing for lunar rover DTN — useful as a baseline comparison
+   when reporting the ISL study results (S3-W6). https://arxiv.org/abs/2510.20436
+
+9. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025.
+   Essential context on why LCRNS was designed without ISLs and what the commercial
+   payload strategy is. https://ntrs.nasa.gov/citations/20250003321
 
 ---
 
@@ -454,7 +573,9 @@ for any DTN researcher studying lunar scenarios. Commit this file to the repo.
 
 **Note:** SABR is the CCSDS standard that *specifies* CGR — they are not two separate routers.
   The meaningful comparison is between *CGR variants* (ION-CGR, VolCgr from A-SABR) and baseline epidemic.
-  See De Jonckère et al. (2025) for the VolCgr definition and benchmark methodology.
+  See De Jonckère et al. (2025, IEEE WiSEE) for the VolCgr definition and benchmark methodology.
+  Also see De Jonckère & Fraire (2024, arXiv:2410.15546) for the FEAP-CB capacity/buffer-aware variant
+  — relevant if ISL contacts are capacity-constrained.
 
 **Steps:**
 1. Using the LCRNS 7-day contact plan, define three traffic profiles:
@@ -477,18 +598,38 @@ for any DTN researcher studying lunar scenarios. Commit this file to the repo.
 
 ---
 
-### S3-W6 — Stretch: Solar System Internet (Week 6)
+### S3-W6 — Stretch: Inter-satellite links for LCRNS (Week 6)
+
+**Goal:** LCRNS Reference Constellation 3.1 has no inter-satellite links (ISLs). Quantify
+what ISLs would add. No public ISL study exists for LCRNS as of June 2026 — this is a
+novel, publishable extension.
 
 **Steps:**
-1. Add a Mars relay node to the contact plan:
-   - Earth-Mars one-way light time: 3–22 min (varies with orbital phase).
-   - Mars DSN window: 8 h/day (approximate for a single ground station).
-   - Use hapsira (active poliastro fork, archived Oct 2023) to compute Earth-Mars distance:
-     `pip install hapsira`
-2. Re-run CGR benchmark with the extended scenario (Moon → Earth → Mars relay chain).
-3. Observe where CGR fails (storage overflow at Earth relay, routing loops when contact
-   plans extend beyond the horizon).
-4. Document the failure mode in the survey chapter. This identifies an open research problem.
+1. Extend `export_contact_plan()` with an `--isl` option: compute satellite-to-satellite
+   line-of-sight (occultation test against the 1737.4 km lunar sphere) and append ISL
+   contacts to the plan.
+2. Characterize the ISL topology over 7 days:
+   - Fraction of time each satellite pair has LOS. (Expect near-continuous: both satellites
+     spend most of the orbit near apolune at ~17,400 km, so the Moon rarely blocks the path —
+     unlike LEO constellations where ISLs churn constantly. Verify this claim numerically.)
+   - ISL range distribution (drives the link budget).
+   - Occultation events: frequency and duration.
+3. Re-run the S3-W5 router benchmark on two contact plans: baseline vs. baseline+ISL.
+   - Key question: how often does a satellite have surface contact but no Earth contact?
+     Those intervals are exactly when ISLs pay off. Quantify the BDR and p95-delay change.
+4. Capacity sweep: parametrize ISL `rate_bps` at 100 Mbps (Ka-band), 1–10 Gbps (optical,
+   operational on Starlink/EDRS), and 10–100 Gbps (THz, citing theoretical link budgets only).
+   Find the knee where the bottleneck shifts from link rate to contact windows or buffers.
+5. Report relay buffer dimensioning with and without ISLs (peak-buffer metric from DSNS).
+   Hand this number to Student 2 for the regenerative-payload SWaP analysis (S2-W6).
+
+**Deliverable:** ISL contact plan (committed CSV) + with/without comparison table.
+This becomes a novel section of the Track S3 paper.
+
+**Alternative stretch (if time permits):** Solar System Internet — add a Mars relay node
+(Earth-Mars OWLT 3–22 min, DSN window ~8 h/day, Earth-Mars distance via `pip install hapsira`)
+and re-run CGR to find where it fails (storage overflow, routing-horizon loops). Document
+the failure mode as an open research problem.
 
 ---
 
