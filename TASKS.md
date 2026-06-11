@@ -226,63 +226,74 @@ justified against SWaP. The research question is not "can 5G work?" but
 **Survey chapters:** `docs/survey/02-relay-architectures.md`, `docs/survey/05-3gpp-on-the-moon.md`
 
 **Research questions:**
-1. Does the 5G NR link budget close from ELFO altitude (17,400 km) with realistic
-   satellite SWaP? This determines whether Architecture B (satellite gNB) is viable
-   at all, or whether Architecture A (surface-only 5G + CCSDS relay) is the only option.
-2. How does the 5G stack behave during ELFO blackouts (gap periods with no Earth link)
-   and during reconnection (contact window start) — layer by layer at the lander?
-3. What explicit adaptation layer is required to connect 5G’s IP-centric N6 interface
-   to CCSDS/BPv7, and what 3GPP assumptions does it violate?
-4. How should energy and bandwidth be prioritised during a contact window
-   (emergency data vs telemetry vs state sync vs config updates)?
+1. What is the minimum viable surface 5G SNPN architecture for a lunar moonbase, and
+   what concrete 3GPP modifications does it require (eDRX, SNPN OAM, UPF buffer,
+   AMF/SMF persistence, gNB beacon mode)?
+2. How does the 5G stack behave during ELFO blackouts and reconnection — layer by
+   layer — and what are the power state transitions (normal → eDRX → deep-sleep
+   → resurrection)?
+3. What explicit N6→BPv7 adaptation layer is required, and what 3GPP assumptions
+   does it violate?
+4. Does a transparent (bent-pipe) or regenerative (on-board DTN router) ELFO payload
+   deliver higher mission utility under realistic PHY capacity and forwarding policies?
+   What is the bottleneck: surface↔ELFO or ELFO↔Earth?
 
 **Primary architectural fork: transparent vs. regenerative ELFO payload.**
-This choice determines what role the ELFO can play in the 5G system and therefore
-what coverage area is achievable at the south pole:
+This choice determines how intelligent the ELFO relay is at the CCSDS/DTN layer.
+**In both cases the 5G stack is surface-only.** ELFO is never a 5G NR node.
+A 5G NR link from 17,400 km altitude is physically infeasible under any realistic
+SWaP budget (path loss ~191 dB at 2.5 GHz; ~27 dB worse than LEO-600 km).
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ Architecture A — Transparent ELFO (bent-pipe)             │
-│                                                           │
-│ Rover/EVA ←5G NR surface→ Lander (gNB+5GC+DTN gateway)   │
-│                              │ CCSDS/LunaNet (bent-pipe) │
-│                             ELFO                          │
-│                              │ amplified RF to Earth DSN │
-│ Coverage: surface only (~1–10 km from lander, terrain)    │
-│ 5G role: surface access only; ELFO is CCSDS relay         │
-│ 5GC: local at lander; N6→IP→DTN gateway adaptation needed │
+│ Architecture A — Transparent ELFO (bent-pipe)              │
+│                                                            │
+│ Rover/EVA ←5G NR→ Lander (gNB + 5GC + DTN gateway)        │
+│                    │ CCSDS/LunaNet (bent-pipe)            │
+│                   ELFO (amplify-and-forward only)          │
+│                    │ amplified RF to Earth DSN            │
+│ 5G: surface-only; ELFO is a passive CCSDS relay            │
+│ DTN gateway: at lander, N6 → BPv7 bundle adaptation        │
+│ ELFO SWaP: minimal (transponder only)                      │
 └────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────┐
-│ Architecture B — Regenerative ELFO (satellite gNB/IAB)   │
-│                                                           │
-│ Rover/EVA ←5G NR surface→ Lander (gNB+5GC)               │
-│ Rover/EVA ←5G NR from orbit→ ELFO (satellite gNB, NTN)   │
-│                              │ F1/N3 over CCSDS backhaul │
-│                             Lander 5GC                    │
-│                              │ DTN trunk to Earth DSN    │
-│ Coverage: wide-area south pole from apolune 17,400 km     │
-│ 5G role: NTN satellite gNB (3GPP IAB or NTN architecture)  │
-│ Key issue: F1/N3 over intermittent CCSDS link to local 5GC │
+│ Architecture B — Regenerative ELFO (smart DTN node)        │
+│                                                            │
+│ Rover/EVA ←5G NR→ Lander (gNB + 5GC + DTN gateway)        │
+│                    │ BPv7 bundles over CCSDS uplink       │
+│                   ELFO (demodulates, stores, forwards)     │
+│                    │ BPv7 bundles over CCSDS downlink     │
+│                   Earth DSN                               │
+│ 5G: surface-only (identical to Arch A)                     │
+│ ELFO role: DTN router (store-and-forward, CGR, ISL)        │
+│ DTN gateway: still at lander; ELFO is a DTN hop, not IP    │
+│ ELFO SWaP: higher (OBC + DTN stack + storage)              │
 └────────────────────────────────────────────────────────┘
 ```
+
+**The 5G protocol design is identical in both architectures** — surface SNPN with
+lander gNB and local 5GC. The fork is entirely in the CCSDS/DTN layer:
+- **Arch A:** lander DTN agent → CCSDS bent-pipe → Earth. Simple, low ELFO SWaP.
+- **Arch B:** lander DTN agent → CCSDS uplink → ELFO DTN router → CCSDS downlink
+  → Earth. Higher ELFO SWaP; enables on-board bundle scheduling, ISL, custody transfer.
 
 **Critical points:**
 1. 5G is designed to connect UEs to an IP data network (N6 interface). It has no native
-   DTN/store-and-forward capability. Any DTN integration requires an explicit adaptation
-   layer (N6 → IP → DTN gateway, or F1/N3 over CCSDS).
-2. The correct 3GPP framework for this network is a **Standalone Non-Public Network
-   (SNPN)** per TS 23.501 Section 4.11: a self-contained 5G network with its own PLMN
-   ID, no roaming, no connection to a public operator. The SNPN can optionally sync with
-   Earth-side operations during contact windows but is fully autonomous otherwise.
-3. The 5G stack requires concrete modifications that do not exist in the current specs:
-   extended eDRX, SNPN-specific OAM, UPF buffer policy for DTN drain, AMF/SMF state
-   persistence across power cycles, and a gNB minimal-beacon power mode. Enumerating
-   and justifying these modifications is the main contribution of Track S2.
+   DTN/store-and-forward capability. The N6→BPv7 adaptation gateway at the lander is
+   required in both architectures — there is no difference here.
+2. The correct 3GPP framework for the surface network is a **Standalone Non-Public
+   Network (SNPN)** per TS 23.501 Section 4.11: self-contained, no roaming, no public
+   operator. Autonomous in gap; syncs with Earth ops during contact windows.
+3. The 5G stack requires concrete modifications not in current specs: extended eDRX,
+   SNPN-specific OAM, UPF buffer policy for DTN drain, AMF/SMF state persistence,
+   gNB minimal-beacon mode. Enumerating and justifying these is the main 3GPP
+   contribution of Track S2.
 
-**Final deliverable:** Architecture comparison (transparent vs. regenerative) ×
-{coverage area, SWaP, 3GPP modifications needed, CCSDS integration point, blackout
-management, spectrum compliance}, with recommendation and justification.
+**Final deliverable:** Architecture comparison (transparent vs. regenerative ELFO DTN
+node) × {ELFO SWaP, DTN routing capability, contact scheduling, ISL feasibility,
+bottleneck (surface↔ELFO vs. ELFO↔Earth), delivered mission utility per policy},
+plus full specification of the surface 5G SNPN with required 3GPP modifications.
 
 ---
 
@@ -291,54 +302,55 @@ management, spectrum compliance}, with recommendation and justification.
 1. **5G architecture** — 3GPP TS 38.300 v17.x, Section 4 (NR architecture overview).
    Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.300/
 
-2. **NTN fundamentals** — 3GPP TR 38.811 v15.4, Sections 5–6 (NTN channel model, LEO/GEO).
-   Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.811/
-   *(Arch B only: only relevant if S2-W2 link budget shows satellite gNB is feasible.)*
+2. **Why ELFO is not a 5G NR node — quantitative justification** — compute path loss
+   at 2.5 GHz from 17,400 km (~191 dB) and compare to LEO-600 km (~164 dB). This
+   is background context for the architectural choice, not a research question.
+   Reference: Edwards 2023 (item 4) Table IV for the surface link budget baseline.
+   *(NTN specs TR 38.811/38.821 are NOT required reading for this track — ELFO is
+   never a gNB, so NTN NR protocol analysis does not apply.)*
 
-3. **NTN system design** — 3GPP TR 38.821 v16.x, Section 6 (solutions for NR NTN).
-   Specifically: Section 6.2 (timing), 6.3 (HARQ), 6.4 (PRACH).
-   Free download: https://www.3gpp.org/ftp/Specs/archive/38_series/38.821/
-   *(Arch B only: CU/DU split and F1-AP over high-delay links. Skip if Arch B is not viable.)*
-
-4. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268
+3. **Lunar 5G baseline** — Edwards et al. (2023), NTRS 20220015268
    ("3GPP Telecommunications Technology on the Moon"). Read Sections III-IV (link budget and coverage).
 
-5. **Updated 5G lunar study** — Wagner et al. (2025), NTRS 20250001947
+4. **Updated 5G lunar study** — Wagner et al. (2025), NTRS 20250001947
    ("Envisioned Lunar Surface Comms Using 3GPP Cellular and Wi-Fi Technologies").
    Companion to Edwards 2023; covers Artemis V multi-rover scenario, SWaP, Nokia/Axiom spacesuit
-   integration. Read alongside item 4 — this is the most current NASA Glenn assessment.
+   integration. Read alongside item 3 — this is the most current NASA Glenn assessment.
 
-6. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
+5. **LunaNet AFS** — LunaNet Interoperability Specification v5, Section 3.2.
    (AFS frequency 2492.028 MHz and its proximity to 3GPP SFCGb1 band.)
    NASA NTRS: https://ntrs.nasa.gov/citations/20230012811
 
-7. **DTN fundamentals** — CCSDS 734.2-B-2 (Bundle Protocol v7), Sections 1–3.
+6. **DTN fundamentals** — CCSDS 734.2-B-2 (Bundle Protocol v7), Sections 1–3.
    Free download: https://public.ccsds.org/Pubs/734x2b2.pdf
    (Coordinate with Student 3 — this is their core spec. You need it to reason about
    where BPv7 attaches to the 5G stack.)
 
-8. **5G system architecture** — 3GPP TS 23.501 v17.x, Sections 4.2 and **4.11**.
+7. **5G system architecture** — 3GPP TS 23.501 v17.x, Sections 4.2 and **4.11**.
    Free download: https://www.3gpp.org/ftp/Specs/archive/23_series/23.501/
    Section 4.2: user-plane path (UE → gNB → UPF → N6) and control-plane NFs.
    **Section 4.11: Non-Public Networks (NPN) — specifically Standalone NPN (SNPN).**
    This is the 3GPP framework that formally describes the lunar private network.
    Understand SNPN PLMN ID format, UE access control, and SNPN-specific NAS procedures.
 
-9. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
+8. **LCRNS system overview** — Esper et al. (2025), NTRS 20250003321, SpaceOps 2025 paper #257.
    System-level LCRNS context: commercial payload strategy, constellation coverage, and
    bent-pipe vs. regenerative trade-offs from the programme office perspective.
    https://ntrs.nasa.gov/citations/20250003321
 
-10. **3GPP Rel-19 NTN** — 3GPP Release 19 (completed Dec 2025).
-    NR_NTN_Ph3 work item on regenerative vs. transparent payload architecture for GEO/NGSO.
-    https://www.3gpp.org/specifications-technologies/releases/release-19
+9. **3GPP Rel-19 NTN** — 3GPP Release 19 (completed Dec 2025).
+   NR_NTN_Ph3 work item on regenerative vs. transparent payload architecture for GEO/NGSO.
+   *(Relevant for background on NASA/3GPP framing of the transparent/regenerative choice,
+   not for NTN NR protocol design which does not apply to ELFO.)*
+   https://www.3gpp.org/specifications-technologies/releases/release-19
 
-11. **µD3TN DTN stack** — Wischer et al. (2024), arXiv:2407.17166.
+10. **µD3TN DTN stack** — Wischer et al. (2024), arXiv:2407.17166.
     Modular BPv7 software stack with CCSDS SPP convergence layer. Relevant for
-    understanding how to implement the CL adapter between gNB/UPF and the DTN node.
+    understanding how to implement the CL adapter between gNB/UPF and the DTN node,
+    and the on-board DTN router in Architecture B.
     Open-source: https://gitlab.com/d3tn/ud3tn
 
-12. **5G power saving** — 3GPP TS 38.331 v17.x, Section 5.7 (RRC power saving);
+11. **5G power saving** — 3GPP TS 38.331 v17.x, Section 5.7 (RRC power saving);
     3GPP TS 24.501 v17.x, Section 5.3.7 (NAS eDRX).
     Understand DRX, eDRX, and RRC_IDLE/INACTIVE states. In the lunar scenario, eDRX
     cycles may need to be orders of magnitude longer than terrestrial values.
@@ -378,26 +390,31 @@ Architecture B). This frames the rest of the study correctly.
    - Document the PA + antenna + baseband SWaP breakdown.
    - This is where the lander power budget is consumed — not the Core.
 
-5. **Satellite gNB on ELFO (Architecture B only) — link budget feasibility check:**
-   This is the critical SWaP question for Architecture B. Can you close a 5G NR link
-   from 17,400 km with realistic satellite hardware?
+5. **Why ELFO is not a 5G NR node — document with numbers (key finding):**
+   A satellite-gNB at ELFO altitude is physically infeasible under any realistic SWaP.
+   Compute and state this explicitly to justify the architectural choice:
    - Path loss at 2.5 GHz, 17,400 km: L = 20·log10(4π·17400e3/0.12) ≈ **191 dB**.
-   - Compare: LEO-600 km path loss ≈ 164 dB. ELFO adds ~27 dB vs. LEO.
-   - 3GPP TS 38.101-1 minimum UE sensitivity (PUSCH): ~ −95 dBm (15 kHz SCS, 1 RB).
-   - For rover UE to close the uplink: required satellite receive sensitivity = UE EIRP
-     − path loss. With UE EIRP ~23 dBm (handheld), received power ≈ 23 − 191 = −168 dBm.
-     Required satellite G/T must compensate ~73 dB gap vs. LEO reference.
-   - **Preliminary finding:** closing the NR link from ELFO altitude requires either a
-     very high-gain satellite antenna (large aperture, high SWaP on satellite) or
-     high-gain rover antenna (directional, SWaP on UE side). Document quantitatively.
-   - Cite Esper 2025 (NTRS 20250003321) for LCRNS payload SWaP context; Wagner 2025
-     (NTRS 20250001947) for surface terminal SWaP figures.
+   - Compared to LEO-600 km: 164 dB — ELFO adds **27 dB** extra path loss.
+   - With UE EIRP ~23 dBm (rover/suit), received power at satellite ≈ −168 dBm.
+   - Required satellite G/T to close the link exceeds any LCRNS-class payload budget
+     (cite Esper 2025 NTRS 20250003321 for LCRNS SWaP envelope).
+   - **Conclusion (state as a finding):** ELFO cannot act as a 5G NR base station.
+     The 5G stack is always surface-only. The ELFO role is CCSDS relay (Arch A) or
+     DTN router (Arch B) — never a gNB.
+   - This eliminates the NTN reading items (TR 38.811/38.821) from the required
+     reading list for this track.
 
-**Deliverable:** Two-part SWaP summary:
-(1) 5GC is not the bottleneck — minimum viable Core ~5–15 W, standard embedded hardware.
-(2) RAN SWaP analysis: surface gNB power budget + Architecture B link budget feasibility.
-**If the Architecture B link budget cannot close with realistic satellite SWaP, this is a
-key finding that eliminates or severely constrains Arch B — document with numbers.**
+6. **ELFO as DTN node — SWaP comparison (Arch A vs. Arch B):**
+   - Arch A (transparent): ELFO carries amplifier + transponder only. Low SWaP.
+   - Arch B (regenerative): ELFO runs a DTN stack (BPv7 router, store-and-forward,
+     bundle scheduling, optionally ISL). Requires OBC + storage + DTN software.
+     Use published smallsat OBC figures (e.g. Raspberry Pi CM4-class at ~5W) plus
+     NAND flash for bundle storage. Estimate mass and power delta vs. Arch A.
+
+**Deliverable:** Three-part SWaP summary:
+(1) 5GC is not the bottleneck — minimum viable Core ~5–15 W.
+(2) Surface gNB is the dominant lander power consumer — estimate with numbers.
+(3) ELFO-as-NR-node is infeasible — quantified; ELFO SWaP comparison Arch A vs. B.
 
 ---
 
@@ -411,9 +428,9 @@ between 5G and CCSDS/DTN at the lander, and what each architecture requires from
   Doppler. **No NR access procedure needs modification** — standard NR works as-is.
 - The ELFO geometry (Doppler, delay) is irrelevant to the surface NR link.
 - The integration challenge is at the **lander node**, where 5G terminates and CCSDS begins.
-- For Architecture B: NTN analysis of the ELFO satellite gNB is **conditional** on the
-  S2-W2 link budget result. If the link budget does not close, Arch B is not viable and
-  this analysis reduces to Arch A only.
+- **Architecture B is NOT a satellite-gNB architecture.** The 5G design is identical
+  in both architectures. The fork is in the CCSDS/DTN layer only (passive relay vs.
+  on-board DTN router). NTN specs (TR 38.811/38.821) are not required reading.
 
 **Steps:**
 
@@ -454,19 +471,24 @@ between 5G and CCSDS/DTN at the lander, and what each architecture requires from
 7. For each broken assumption, document what the DTN gateway must provide and what
    3GPP hooks exist (PFCP/N4 between SMF and UPF, TS 29.244).
 
-**Part D — Architecture B (conditional on S2-W2 link budget): F1-AP over CCSDS**
-8. Read 3GPP TS 38.473 (F1-AP). Classify each procedure by latency budget:
-   - Latency-sensitive (cannot tolerate ~58 ms OWLT): UE Context Setup/Modification,
-     DL/UL RRC message transfer, scheduling-related signalling.
-   - Tolerable: F1 Setup (once-only), gNB-DU Configuration Update (periodic).
-   Build table: procedure | latency budget | CCSDS-compatible? | modification needed.
-   Only execute if Arch B link budget closed in S2-W2.
+**Part D — Architecture B DTN layer: ELFO as on-board DTN router**
+8. The 5G design does not change in Arch B. What changes is what happens to bundles
+   after they leave the lander DTN gateway over the CCSDS uplink:
+   - **Arch A:** ELFO is transparent; lander DTN agent addresses bundles directly to
+     Earth DSN node; ELFO just amplifies the CCSDS signal.
+   - **Arch B:** ELFO is a DTN router; it receives bundles, stores them, and forwards
+     them toward Earth (or other ELFO nodes via ISL) using CGR/SABR.
+   Identify which DTN functions this requires on the ELFO OBC:
+   - BPv7 router (cite RFC 9171 + µD3TN `wischer2024ud3tn`).
+   - Contact-plan-driven CGR scheduler (cite `ccsds_sabr`).
+   - Persistent storage for custody bundles.
+   - CCSDS CL adapters (uplink from surface + downlink to Earth/ISL).
 
 **Deliverable:** Three tables:
 - SNPN configuration delta vs. public PLMN (Part A).
 - Data lifecycle diagram + custody/TTL policy per data type (Part B).
 - N6 assumptions broken + gateway API requirements (Part C).
-- F1-AP compatibility table (Part D, Arch B only if viable).
+- Arch B DTN router function list + estimated OBC/storage requirements (Part D).
 All feed into S2-W4 (power states + blackout) and S2-W7 (DTN gateway spec).
 
 ---
@@ -563,54 +585,169 @@ This feeds into Section V of the Track S2 paper.
 
 ---
 
+### S2-W5b — PHY-aware contact capacity and forwarding policy (Week 5b)
+
+**Goal:** Derive the usable capacity of each ELFO contact from PHY assumptions (frequency,
+bandwidth, link budget, overhead), then define which 5G-originated traffic is forwarded
+first. This is the missing link between the DTN gateway and a concrete, defensible design.
+Without it, the gateway is an abstraction; with it, the design has a quantitative basis.
+
+**Central framing:**
+Lunar relay capacity is not continuous — it is a sequence of contact opportunities, each
+with limited bits. The system must convert those opportunities into a scheduling policy:
+which bundles are forwarded, when, over which link, and at what priority.
+
+```
+PHY assumptions → effective contact rate → DTN contact-plan edge rate
+                → bundle scheduler → delivered mission utility
+```
+
+**Steps:**
+
+**Part A — Define four PHY profiles:**
+
+1. **Profile 1 — Local 5G island (rover/EVA ↔ lander gNB):**
+   - Band: SFCGb1 (2503.5–2655 MHz); BW scenarios: 5/20/50 MHz.
+   - SWaP-constrained TX power; conservative MCS for robustness; TDD asymmetric
+     (uplink-heavy: telemetry dominates over DL commands).
+   - Metrics: local access capacity (Mbps), UEs supported, energy per UE bit (J/bit),
+     minimum guaranteed rate for critical traffic.
+
+2. **Profile 2 — Surface gateway ↔ ELFO backhaul:**
+   - Band scenarios: S-band (sub-Mbps), X/Ka-band (tens of Mbps).
+   - Directional antenna at lander/gateway; pointing feasible for fixed or slow-moving asset.
+   - Rate varies with elevation and range (from S3-W3 geometry).
+   - Metrics: backhaul capacity per contact (bits), J/bit, minimum elevation threshold.
+   - **Note:** EVA suits cannot use directional backhaul — they access via the local 5G island.
+
+3. **Profile 3 — ELFO ↔ Earth DSN feeder:**
+   - Band: Ka-band or optical (if modelled); depends on LCRNS payload.
+   - Higher rate than surface-to-ELFO; but scheduling-dependent (DSN availability).
+   - Metrics: Earth drain capacity per day (bits/day), queue accumulation at ELFO,
+     bottleneck identification (surface↔ELFO or ELFO↔Earth).
+
+4. **Profile 4 — Emergency direct-to-ELFO (asset outside 5G island):**
+   - Low rate, maximum robustness; S-band or UHF-like service (not 5G NR).
+   - Small messages, repeated, highest priority; omni antenna on UE side.
+   - Metrics: minimum viable emergency rate, probability of delivery within TTL,
+     required terminal EIRP.
+
+**Part B — Effective rate formula:**
+5. For each profile, compute:
+   ```
+   C_eff = B_alloc × η_spectral × η_coding × η_protocol × η_contact
+   ```
+   where:
+   - `η_spectral`: Shannon-limited spectral efficiency at operating Eb/N0.
+   - `η_coding`: CCSDS/NR FEC overhead (rate-1/2 turbo → η ≈ 0.5, etc.).
+   - `η_protocol`: CCSDS framing + BPv7 header + BPSEC overhead (estimate ~5–15%).
+   - `η_contact`: fraction of time the link exists = contact_duration / orbit_period.
+   Document each η value with source or derivation.
+
+**Part C — Contact capacity table:**
+6. Consume S3-W3/W4 contact windows. For each contact produce:
+
+   | Contact | Duration (s) | Band | Alloc BW | C_eff (bps) | Usable bits | Energy cost (Wh) | Main traffic |
+   |---------|--------------|------|----------|-------------|-------------|-----------------|---------------|
+
+   The `rate_bps` field in each DTN contact-plan edge must be derived from this table,
+   not assumed arbitrarily:
+   ```
+   contact_plan_edge = (node_a, node_b, t_start, t_end, C_eff_bps, OWLT_s)
+   ```
+
+**Part D — Forwarding policies:**
+7. Implement and compare four bundle scheduling policies against the contact capacity table:
+   - **FIFO**: transmit bundles in arrival order.
+   - **Strict priority**: criticality class first (emergency > C&C > telemetry > OAM >
+     science metadata > science bulk > media).
+   - **Deadline-aware**: sort by (TTL_remaining / bundle_size); drop if TTL < OWLT.
+   - **Utility-aware**: score = w₁·criticality + w₂·deadline_urgency + w₃·custody_flag
+     + w₄·age − w₅·size; transmit by descending score until window is full.
+
+8. Traffic mix to use (from S2-W3 data lifecycle and S3-W5 profiles):
+   - Emergency/safety: ~1 kbps, TTL = 5 min, custody required.
+   - Health telemetry: ~10 kbps accumulated per gap, TTL = gap + 1 h.
+   - Science metadata: ~100 kbps/contact, TTL = 24 h.
+   - Science bulk: ~1–10 Mbps/contact, TTL = 7 days, no hard deadline.
+   - EVA video (if any): burst, TTL = real-time only, expendable.
+
+9. Report per-policy across the 7-day contact plan:
+
+   | Policy | Emergency DDR | Telemetry DDR | Science DDR | Video DDR | p95 latency | Expired bundles | Contact utilization |
+   |--------|---------------|---------------|-------------|-----------|-------------|-----------------|--------------------|
+
+   (DDR = Data Delivery Ratio.)
+
+10. Compute the **delivered mission utility per contact**:
+    ```
+    U = 100·E_delivered + 10·T_delivered + 3·Sm_delivered + 1·Sb_delivered
+        − 1000·E_expired
+    ```
+    Compare U across policies and band scenarios (S-band vs Ka-band).
+
+**Deliverable:**
+- PHY profile table: 4 profiles × {band, BW, η factors, C_eff, energy cost}.
+- Contact capacity table: one row per S3 contact window with usable bits and energy cost.
+- Forwarding policy comparison table (9 rows above).
+- **Key finding to state explicitly:** Is the bottleneck surface↔ELFO or ELFO↔Earth?
+  Does S-band capacity drain high-priority bundles before TTL expiry?
+  Does Ka-band change the answer?
+- This feeds S2-W7 (which concrete rate to plug into each contact-plan edge) and
+  S2-W8 (quantitative evidence for the architecture comparison).
+
+---
+
 ### S2-W6 — Architecture comparison: transparent vs. regenerative (Week 6)
 
 **Goal:** This is the central analytical week of Track S2. Compare the two ELFO payload
 architectures across every dimension that matters: coverage area, 5G protocol implications,
 CCSDS integration point, SWaP, and spectrum. The output is the main contribution table.
 
+**Note: both architectures have identical 5G surface design.** The fork is in the
+CCSDSS/DTN layer at and beyond the lander gateway. This week compares the two
+DTN relay options, not two different 5G stacks.
+
 **Steps:**
-1. **Coverage comparison** (use S3-W3 contact windows and S1 terrain outputs):
-   - Architecture A (transparent): 5G coverage = lander BTS surface footprint only
-     (terrain-limited, ~1–10 km, per S1 propagation model). ELFO provides no 5G coverage
-     — it only relays CCSDS traffic. Coverage predictability = ELFO visibility schedule.
-   - Architecture B (regenerative, satellite gNB): 5G coverage from ELFO apolune
-     (17,400 km altitude over south pole) — approximately the entire south-pole hemisphere
-     visible to ELFO, during contact windows only. Estimate the 5G NR link budget
-     from ELFO to surface at SFCGb1 (2503.5–2655 MHz): EIRP, path loss, required UE
-     sensitivity. Compare against 3GPP TS 38.101-1 minimum sensitivity.
-     Note: rovers/EVA suits need directional or high-gain antennas — document SWaP impact.
+1. **Coverage and 5G protocol (identical for both architectures):**
+   - 5G coverage = lander BTS surface footprint (terrain-limited, ~1–10 km from lander,
+     per S1 propagation model).
+   - ELFO provides no 5G coverage in either architecture. Cite S2-W2 link budget
+     analysis (191 dB path loss) as the quantitative justification.
+   - 5G protocol design: SNPN, N6→DTN gateway at lander, same in both architectures.
 
-2. **5G protocol implications per architecture:**
-   - Architecture A: standard 5G NR on the surface, no NTN modifications. The only
-     non-standard element is the N6→IP→DTN adaptation at the lander (gateway function).
-     Which 3GPP specifications govern this interface and what is needed beyond them?
-   - Architecture B: ELFO acts as satellite gNB (3GPP NTN, TR 38.821). What 3GPP
-     modifications are needed for an ELFO-altitude gNB (F1 over CCSDS, scheduling
-     over intermittent backhaul, CU/DU split with DTN in between)?
-     Key reference: 3GPP Rel-19 NTN work items (`3gpp_rel19_ntn`).
+2. **DTN relay comparison (the actual fork):**
+   - Architecture A (transparent ELFO): lander DTN agent addresses bundles directly to
+     Earth DSN node. ELFO amplify-and-forwards the CCSDS signal. No on-board DTN logic.
+     Implication: lander must schedule bundles for the full lander↔Earth path at once;
+     no re-scheduling possible mid-path; custody stays at lander until Earth ACK.
+   - Architecture B (regenerative ELFO = DTN router): ELFO receives bundles over CCSDS
+     uplink, stores them, applies CGR/SABR scheduling, and forwards toward Earth or ISL.
+     Implication: lander↔ELFO and ELFO↔Earth are two independent DTN hops with
+     independent scheduling; custody can be transferred to ELFO; enables ISL routing.
 
-3. **CCSDS/DTN integration point per architecture:**
-   - Architecture A: DTN gateway at lander N6 interface. IP PDUs → BPv7 bundles.
-     Adaptation layer needed (cite µD3TN `wischer2024ud3tn` for CL adapter design).
-     BPv7 carries the IP user-plane traffic as payload — 5G is unaware of DTN.
-   - Architecture B: F1/N3 interface between ELFO gNB (DU) and lander 5GC (CU)
-     must cross the CCSDS link. This is NOT standard — F1 is designed for low-latency
-     fibre links. Document the modifications needed to run F1-AP over a DTN carrier.
+3. **CCSDS/DTN integration differences:**
+   - Arch A: single-hop DTN (lander → Earth); ELFO is transparent to the DTN layer.
+     Contact plan has one edge per ELFO pass: lander → Earth, rate = C_eff (S2-W5b).
+   - Arch B: two-hop DTN (lander → ELFO → Earth); two independent contact-plan edges;
+     ELFO runs BPv7 router + CGR. Contact plan has: lander→ELFO edge + ELFO→Earth edge.
+     When ELFO↔Earth rate > lander↔ELFO rate, ELFO is not the bottleneck;
+     when ELFO↔Earth rate < lander↔ELFO rate, bundles accumulate at ELFO.
 
 4. **SWaP per architecture** (lander + ELFO satellite separately):
-   - Architecture A — lander: AMF+SMF+UPF+DTN gateway (minimum viable 5GC from S2-W2)
-     + CCSDS modem. ELFO: amplifiers + transponder only (low SWaP).
-   - Architecture B — lander: AMF+SMF+UPF (CU side). ELFO: full gNB (DU: baseband,
-     radio, OBC, storage) + CCSDS backhaul modem. Estimate using published smallsat
-     OBC figures; use S3-W5 peak-buffer as onboard storage sizing driver.
+   - Architecture A — lander: gNB + AMF+SMF+UPF + DTN gateway + CCSDS modem.
+     ELFO: amplifiers + transponder only (low SWaP).
+   - Architecture B — lander: identical. ELFO: OBC + DTN stack + NAND storage +
+     CCSDS modems (uplink + downlink). Use S2-W2 step 6 estimates.
 
 5. **Build the comparison table:**
-   Architecture × {coverage area, contact-window dependency, 3GPP modifications needed,
-   CCSDS integration point, lander SWaP, ELFO SWaP, spectrum used, blackout behaviour}.
+   Architecture × {ELFO DTN role, lander DTN design, contact-plan structure,
+   scheduling locus, custody model, ELFO SWaP delta, bottleneck link, ISL capability,
+   blackout behaviour, lander→Earth latency distribution}.
 
-**Deliverable:** Architecture comparison table — the main result of Track S2.
-This is Table I (or Table II if the blackout table from S2-W4 is Table I) of the paper.
+**Deliverable:** Architecture comparison table — the main result of Track S2 (Table I).
+Note: this is NOT a 5G protocol comparison (those are identical). It is a DTN relay
+architecture comparison: transparent vs. regenerative ELFO as a DTN node.
 
 ---
 
@@ -636,24 +773,27 @@ This week documents exactly what that gateway must do in each architecture.
    - Draw the full protocol stack: UE PHY/MAC/RLC/PDCP/NAS → gNB → UPF N6 → DTN agent
      → CCSDS CL → ELFO → Earth DSN.
 
-2. **Architecture B DTN gateway (F1/N3 over CCSDS):**
-   - ELFO DU (gNB) communicates with lander CU (5GC) via F1-AP and GTP-U/N3.
-   - These interfaces are IP-based and assume low latency. Running them over an
-     intermittent CCSDS link requires:
-     - F1-AP messages to be tunnelled via a CCSDS framing layer.
-     - Scheduling grants to account for the ELFO-lander OWLT (~58 ms).
-     - Buffer at ELFO DU for uplink data during CCSDS contact gaps.
-   - Document which F1-AP procedures are latency-sensitive and which can tolerate
-     the CCSDS delay. Reference TR 38.821 NTN CU/DU split analysis.
+2. **Architecture B: ELFO as on-board DTN router:**
+   - Lander DTN agent sends bundles over CCSDS uplink to ELFO.
+   - ELFO BPv7 router receives, stores, and re-schedules bundles toward Earth (or ISL).
+   - Document the two-hop contact plan: lander→ELFO edge + ELFO→Earth edge.
+   - Specify what the ELFO DTN node must implement: BPv7 router, CGR/SABR scheduler,
+     CCSDS CL adapters, persistent bundle storage.
+   - Draw the full protocol stack: UE → gNB → UPF N6 → DTN agent → CCSDS CL
+     → ELFO DTN router → CCSDS CL → Earth DSN.
 
-3. **Energy and bandwidth budget for the contact window (both architectures):**
-   - Contact window capacity = LCRNS channel rate × window duration (from S3-W3).
-   - Priority ordering for the window: emergency → science telemetry → 5GC re-sync
-     → config updates. Allocate % of window to each category.
-   - Document how QoS flows at the 5G level translate to bundle scheduling at the DTN level.
+3. **Contact-plan edge rates from S2-W5b (both architectures):**
+   - Rate of each contact-plan edge = C_eff from S2-W5b Profile 2 (surface↔ELFO)
+     and Profile 3 (ELFO↔Earth). Do not assume rates arbitrarily.
+   - Arch A: one edge per contact (lander → Earth at C_eff_surface↔ELFO).
+   - Arch B: two edges per contact (lander → ELFO at C_eff_surface↔ELFO;
+     ELFO → Earth at C_eff_ELFO↔Earth).
+   - Map 5G QoS flows (5QI from TS 23.501 Table 5.7.4-1) to DTN bundle priority;
+     apply utility-aware forwarding policy from S2-W5b as default.
 
 **Deliverable:** Full protocol stack diagrams for both architectures + DTN gateway
-specification + contact-window budget table. This feeds directly into S2-W8 synthesis.
+specification with PHY-grounded contact-plan edge rates + contact-window budget table.
+This feeds directly into S2-W8 synthesis.
 
 ---
 
@@ -668,10 +808,11 @@ deliverable. S2's input to the end-to-end picture is the recommended protocol ar
 and the latency/continuity characterisation — not RF propagation.
 
 **Steps:**
-1. Synthesise the findings from S2-W3 (interface analysis), S2-W4 (blackout/reconnection),
-   S2-W5 (spectrum coexistence), S2-W6 (architecture comparison table), and S2-W7 (DTN
-   gateway specification) into a single architectural recommendation with written
-   justification for each design choice, citing the specific spec clauses.
+1. Synthesise the findings from S2-W2 (SWaP + NR infeasibility at ELFO altitude),
+   S2-W3 (SNPN + N6 interface analysis), S2-W4 (blackout/reconnection and power state
+   machine), S2-W5 (spectrum coexistence), S2-W5b (PHY capacity and forwarding policies),
+   S2-W6 (Arch A vs. Arch B DTN relay comparison), and S2-W7 (DTN gateway spec)
+   into a single architectural recommendation with written justification.
 2. Verify LunaNet/CCSDS compatibility of the recommended architecture:
    - Does the recommended DTN placement satisfy LunaNet ICD v5 Section 4.1 (BPv7 required)?
    - Are the proposed 3GPP modifications within the scope of 3GPP Rel-19 NTN work items,
@@ -680,9 +821,10 @@ and the latency/continuity characterisation — not RF propagation.
      (from S2-W5)? Confirm guard band and out-of-band limits are met.
 3. Using S3's 7-day contact plan (S3-W4 output), compute the end-to-end latency
    distribution (surface → Earth) under the recommended architecture:
-   - For the viable architecture(s) from S2-W6 (Arch A always; Arch B only if link
-     budget closed in S2-W2): sessions broken per day, median and p95 data-delivery
-     latency, fraction of contact time lost to protocol overhead.
+   - For both Arch A and Arch B: sessions broken per day, median and p95 data-delivery
+     latency, fraction of contact window lost to protocol overhead.
+   - Also report delivered mission utility U per architecture under the recommended
+     forwarding policy (from S2-W5b).
    - This is the quantitative evidence for the main comparison table.
 4. Prepare a 2-page summary document: "S2 contribution to integration notebook"
    describing which architecture (A or B) to instantiate in
@@ -699,19 +841,27 @@ and the latency/continuity characterisation — not RF propagation.
 Satellites for Lunar Surface Communications"
 
 **Paper structure:**
-1. Introduction — why 5G at the lunar south pole; ELFO as coverage/backhaul enabler;
-   SWaP constraints; 5G’s IP-centric and always-connected design vs. lunar reality.
-2. System model — SNPN configuration; ELFO contact windows and gap model (from S3);
-   data lifecycle from rover collection to Earth delivery.
-3. Architecture A: transparent ELFO + surface 5G SNPN + N6→DTN gateway — protocol
-   stack, DTN adaptation layer, power state machine, spectrum coexistence.
-4. Architecture B (if viable per S2-W2 link budget): regenerative ELFO as satellite
-   gNB — F1/N3 over CCSDS, coverage extension, SWaP cost.
-5. Required 5G stack modifications — explicit table: eDRX extension, SNPN OAM,
+1. Introduction — why 5G at the lunar south pole; ELFO as backhaul enabler;
+   SWaP constraints; 5G’s IP-centric design vs. lunar DTN/CCSDS reality.
+2. System model — SNPN surface network; ELFO contact windows and gap model (from S3);
+   data lifecycle from rover to Earth; four-link capacity model.
+   **Key finding stated early:** 5G NR from ELFO altitude is infeasible (191 dB path
+   loss); therefore ELFO is always a CCSDS relay node, never a gNB.
+3. PHY-layer capacity abstraction — four PHY profiles; C_eff formula with η factors;
+   contact capacity table; bottleneck identification (surface↔ELFO vs. ELFO↔Earth).
+4. Forwarding policy — FIFO vs. strict priority vs. deadline-aware vs. utility-aware;
+   delivery ratios, p95 latency, delivered mission utility per policy and band scenario.
+5. Architecture A (transparent ELFO): lander N6→DTN gateway → CCSDS bent-pipe →
+   Earth DSN. Single-hop DTN. Protocol stack, SNPN design, power state machine.
+6. Architecture B (regenerative ELFO as DTN router): lander N6→DTN gateway → CCSDS
+   uplink → ELFO BPv7 router → CCSDS downlink → Earth DSN. Two-hop DTN.
+   On-board scheduling, custody transfer, ISL capability. ELFO SWaP cost.
+7. Required 5G stack modifications — explicit table: eDRX extension, SNPN OAM,
    UPF buffer policy for DTN, AMF/SMF state persistence, gNB beacon mode,
    N6 DN availability signalling. For each: spec clause, required change, justification.
-6. Comparison and recommendation — coverage, SWaP, 3GPP compliance, CCSDS integration.
-7. Conclusions — recommended architecture; open 3GPP standardisation gaps.
+8. Comparison — Arch A vs. Arch B: scheduling locus, custody model, ELFO SWaP,
+   delivered mission utility, spectrum coexistence.
+9. Conclusions — recommended architecture; open 3GPP standardisation gaps.
 
 **Target venues:** IEEE Globecom NTN Workshop, IEEE Aerospace, or IEEE Communications Magazine.
 
