@@ -217,6 +217,56 @@ The format for an entry is standard BibTeX:
 
 ---
 
+## Key contributions
+
+Beyond toolchain infrastructure, this project makes **analytical contributions** that are
+novel in the published lunar-communications literature:
+
+### Regulatory bandwidth ceiling analysis (S2, S2-W5 Part B)
+
+No prior 5G-on-Moon paper has systematically mapped the SFCG/ITU pre-assigned lunar
+frequency bands to per-link Shannon capacity ceilings. This project derives those ceilings
+explicitly and identifies the dominant bottleneck in the ELFO relay chain.
+
+The core finding, grounded in SFCG Recommendation 41-1 (2023) and the ICG-17 Lunar
+Spectrum Architecture (UNOOSA, 2023):
+
+> **The pre-assigned bands do fix per-link capacity ceilings.
+> The technology determines spectral efficiency *within* those ceilings — not the other way round.**
+
+Key results:
+
+| Link | Assigned band | Max alloc BW | Shannon ceiling (indicative) | Limiting factor |
+|------|--------------|-------------|------------------------------|----------------|
+| Rover ↔ lander (5G island) | SFCGb1 2503.5–2655 MHz | ~116 MHz | ~100–300 Mbps (5G NR, MIMO 4×4) | SNR / SWaP |
+| Surface → ELFO (S-band) | 2200–2290 MHz | **< 6 MHz** (SFCG 41-1) | **~2–4 Mbps** | **Regulatory BW cap** |
+| Surface → ELFO (Ka-band) | 27.0–27.5 GHz | up to 400 MHz | ~50–500 Mbps | SNR at low elevation |
+| ELFO → Earth (Ka DWE) | 23.15–23.55 GHz | up to 400 MHz | ~50–500 Mbps | DSN scheduling |
+
+The **SFCG 41-1 rule** is the key regulatory constraint:
+> *"Links with occupied bandwidth ≥ 6 MHz must use Ka-band only.
+> S-band backhaul is therefore capped at < 6 MHz — approximately 2–4 Mbps raw — regardless
+> of what 5G NR delivers on the surface."*
+
+This means the **surface↔ELFO S-band link is the bottleneck**, not the ELFO↔Earth Ka-band
+feeder (which can carry hundreds of Mbps). Switching to Ka-band backhaul eliminates the
+bottleneck at the cost of ~5–15 W additional ELFO payload power. This finding directly
+motivates the transparent vs. regenerative ELFO architecture comparison (RQ4) and grounds
+the PHY-aware DTN capacity formulation in S2-W5b:
+```
+C_eff = B_alloc × η_spectral × η_coding × η_protocol × η_contact
+```
+where `B_alloc` is now a **regulatory quantity** (from SFCG 32-2R6 / 41-1), not a free
+design parameter.
+
+**Sources verified by direct PDF parse (pdftotext):**
+- NTRS 20240011047 — *International Coordination and Cooperation on LunaNet Spectrum* (2024)
+- ICG-17 Lunar Spectrum Overview — UNOOSA Working Group B (2023)
+- ITU SFCG Overview (Catherine Sham, ITU-R Science Services Seminar, 2025)
+- SFCG Recommendations 32-2R6, 41-1, 42-1, 43-1
+
+---
+
 ## How Tasks are Managed (`TASKS.md`)
 
 All technical objectives, student milestones, and testing requirements are centralized in `@/Users/e.baena/CascadeProjects/lunar-comms-survey/TASKS.md:1`. This file functions as the authoritative task tracker and code specification.
@@ -263,11 +313,14 @@ A subset of the most important references for this project. Full list in `docs/s
 | Siegler et al. (2020) | Global regolith loss tangent map |
 | Mazarico et al. (2011) | South pole illumination model (Shackleton, PSRs) |
 | Folta & Quinn (2006) | ELFO design — canonical reference for relay orbits |
-| Edwards et al. (2023) | 3GPP/5G on the Moon — system-level analysis |
-| 3GPP TR 38.811 | NTN channel model |
-| 3GPP TR 38.821 | NTN system study |
+| Edwards et al. (2023) | 3GPP/5G on the Moon — surface link budget, system-level analysis |
 | LunaNet ICD v5 | LunaNet Interoperability Specification |
-| SFCG REC 32-2R6 | Lunar frequency coordination |
+| SFCG REC 32-2R6 (2025) | Lunar frequency coordination — all link types and PNT |
+| SFCG REC 41-1 (2023) | Key bandwidth rule: ≥6 MHz links → Ka-band only; establishes S-band cap |
+| SFCG REC 42-1 (2024) | Ka-band channel plan for lunar in-situ relay satellites |
+| SFCG REC 43-1 (2025) | PNT band (2483.5–2500 MHz) protection from surface 5G emissions |
+| NTRS 20240011047 (Sham et al., 2024) | LunaNet Ka-band spectrum coordination; regulatory bandwidth ceilings |
+| ICG-17 Lunar Spectrum Architecture (UNOOSA, 2023) | Per-link band assignments across the full lunar architecture |
 | CCSDS 734.2-B-2 | Bundle Protocol v7 specification |
 | LCRNS Ref. Const. 3.1 (NTRS 20250002698) | LCRNS ephemerides and orbit parameters |
 | Toonen et al. (2022) | Lunar surface-to-surface coverage baseline |

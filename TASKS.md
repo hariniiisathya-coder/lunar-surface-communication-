@@ -564,9 +564,16 @@ and the CCSDS/DTN backhaul.
 
 ---
 
-### S2-W5 — Frequency coexistence: LunaNet AFS vs 3GPP SFCGb1 (Week 5)
+### S2-W5 — Frequency coexistence and regulatory bandwidth assessment (Week 5)
 
-**Goal:** Assess interference between LunaNet AFS (2492.028 MHz) and 3GPP SFCGb1 (2503.5–2655 MHz).
+**Goal:** Two complementary analyses that together ground all PHY profiles in S2-W5b:
+(A) interference coexistence between LunaNet AFS (2492.028 MHz) and 3GPP SFCGb1
+(2503.5–2655 MHz); and (B) a per-link capacity-ceiling assessment derived from the
+pre-assigned SFCG/ITU lunar frequency bands.
+
+---
+
+**Part A — Coexistence: LunaNet AFS vs. SFCGb1**
 
 **Steps:**
 1. Read SFCG Recommendation 32-2R6 (lunar frequency allocations, June 2025).
@@ -580,8 +587,64 @@ and the CCSDS/DTN backhaul.
    - 43-1 assumes ≥0.24 m UE-to-PNT antenna separation, ≥17 m BTS-to-PNT separation.
 5. Propose the minimum guard band needed and check against SFCG allocation.
 
-**Deliverable:** A 1-page coexistence analysis with a spectrum diagram showing AFS and SFCGb1.
-This feeds into Section V of the Track S2 paper.
+**Deliverable (Part A):** A 1-page coexistence analysis with a spectrum diagram showing AFS
+and SFCGb1. This feeds into Section V of the Track S2 paper.
+
+---
+
+**Part B — Regulatory bandwidth assessment: what the pre-assigned bands actually allow**
+
+**Motivation:** The lunar frequency bands are pre-assigned by SFCG/ITU, but the achievable
+bandwidth on each link depends on (i) which band segment is available and (ii) what technology
+occupies it. This analysis derives a hard capacity ceiling per link, which is the regulatory
+input to every PHY profile in S2-W5b. This is a **novel contribution**: no prior published
+5G-on-Moon paper has mapped SFCG allocations to per-link Shannon ceilings systematically.
+
+**Steps:**
+6. Tabulate the SFCG 32-2R6 / ITU allocations by link type (from NTRS 20240011047 and
+   ICG-17 Lunar Spectrum Architecture diagram, both verified against pdftotext parse
+   of source documents):
+
+   | Link | Direction | Band | Assigned range | Max alloc BW | SFCG rule |
+   |------|-----------|------|---------------|--------------|-----------|
+   | Surface local (5G island) | rover↔lander | SFCGb1 | 2503.5–2655 MHz | ~116 MHz | 32-2R6 |
+   | Surface local (5G island) | rover↔lander | C-band | 3500–3800 MHz | 100 MHz | 32-2R6 |
+   | Surface local (5G island) | rover↔lander | mmWave | 27.225–28.35 GHz | up to 1.1 GHz | 32-2R6 |
+   | Surface → ELFO (backhaul) | LS→LO | S-band | 2200–2290 MHz | **< 6 MHz/carrier** | SFCG 41-1 |
+   | ELFO → Surface (backhaul) | LO→LS | S-band | 2025–2110 MHz | **< 6 MHz/carrier** | SFCG 41-1 |
+   | Surface → ELFO (backhaul) | LS→LO | Ka-band | 27.0–27.5 GHz | up to 400 MHz | SFCG 41-1, 42-1 |
+   | ELFO → Surface (backhaul) | LO→LS | Ka-band | 23.15–23.55 GHz | up to 400 MHz | SFCG 41-1, 42-1 |
+   | ELFO → Earth (feeder) | LO→Earth | Ka-band DWE | 23.15–23.55 GHz | up to 400 MHz | SFCG 41-1 |
+   | ELFO → Earth (future) | LO→Earth | Ka 37-38 GHz | 37–38 GHz | up to 1 GHz | SFCG 32-2R6 |
+
+7. Apply the **SFCG 41-1 bandwidth rule** (the key regulatory constraint for the relay links):
+   > *"Lunar region links with occupied bandwidth < 6 MHz may use S-, X- or Ka-band.
+   > Links with occupied bandwidth ≥ 6 MHz MUST use Ka-band only."*
+   - Consequence for S2: **S-band backhaul (surface↔ELFO) is capped at < 6 MHz occupied BW.**
+     At QPSK with CCSDS coding rate 1/2, this yields a raw throughput ceiling of
+     ~2–4 Mbps on the surface↔ELFO link — regardless of what 5G NR delivers locally.
+   - Ka-band backhaul lifts this ceiling by two orders of magnitude (up to ~400 MHz BW
+     → hundreds of Mbps), but at significantly higher ELFO payload SWaP cost.
+
+8. For each link, compute the **Shannon ceiling** `C_max = B_alloc × log₂(1 + SNR_design)`:
+   - Use SNR from Edwards et al. (2023) Table IV (surface link) and NTRS 20240011047
+     (ELFO↔Earth Ka-band) as baseline SNR values.
+   - This gives the **regulatory-plus-physics maximum** that no forwarding policy can exceed.
+   - Document which links are **bandwidth-limited** (S-band backhaul, < 6 MHz rule) vs.
+     **SNR-limited** (Ka-band long-range links at low elevation).
+
+9. **Key finding to state explicitly:** The bottleneck is almost certainly the
+   **surface↔ELFO link under S-band**, not the ELFO↔Earth Ka-band feeder.
+   S-band caps at ~2–4 Mbps; Ka ELFO→Earth can carry hundreds of Mbps. Switching to
+   Ka-band backhaul eliminates the bottleneck but adds ~5–15 W of ELFO payload power.
+   This directly answers RQ4 and motivates the architecture comparison in S2-W6.
+
+**Deliverable (Part B):**
+- Regulatory bandwidth table (step 6).
+- Per-link Shannon ceiling table with SNR source citations.
+- One-paragraph "bottleneck identification" statement for the paper.
+- These tables feed directly into S2-W5b PHY profiles (which band each profile uses and
+  why) and into S2-W8 (quantitative architecture comparison).
 
 ---
 
