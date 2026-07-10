@@ -60,10 +60,7 @@ def fspl_db(
     fspl : float or ndarray
         Free-space path loss in dB.
     """
-    raise NotImplementedError(
-        "TODO (S1/S2, Week 2): implement Friis FSPL. "
-        "See ITU-R P.525-4 and docs/survey/03-rf-propagation.md"
-    )
+    return 20 * np.log10(distance_m) + 20 * np.log10(freq_hz) - 147.55
 
 
 def received_power_dbm(
