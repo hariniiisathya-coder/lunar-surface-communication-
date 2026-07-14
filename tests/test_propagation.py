@@ -98,38 +98,47 @@ class TestBreakpoint:
 
 class TestTwoRay:
 
-    def test_free_space_limit_at_short_range(self):
-        """Near the transmitter (d << breakpoint), two-ray ≈ free-space ± 6 dB.
+    def test_free_space_limit_averaged_short_range(self):
+        """Averaged over a band inside the breakpoint, two-ray tracks Friis.
 
-        The two-ray model oscillates between Friis±6dB in the near-field.
-        It cannot exceed Friis + 6dB or be less than Friis − 6dB for
-        coherent addition of two equal-amplitude rays.
+        Two-ray oscillates about free space; the MEAN offset over many
+        wavelengths (50-500 m, all << 2 km breakpoint) is small even though
+        individual interference peaks/nulls swing >10 dB. (The old test used a
+        single point at 10 m with a +/-6 dB bound, which is not physical at
+        30 m TX height.)
         """
-        d = 10.0  # 10 m — well within breakpoint
+        d = np.linspace(50.0, 500.0, 400)
         pl_tr = two_ray.path_loss_db(d, 30.0, 2.0, 2.5e9)
         pl_fs = friis.fspl_db(d, 2.5e9)
-        assert abs(pl_tr - pl_fs) <= 7.0, (  # 6 dB + 1 dB tolerance
-            f"At short range, two-ray should be within ±6 dB of Friis. "
-            f"Got Δ = {pl_tr - pl_fs:.1f} dB."
+        mean_offset = np.mean(pl_tr - pl_fs)
+        assert abs(mean_offset) < 3.0, (
+            f"Two-ray mean offset from Friis over 50-500 m should be small; "
+            f"got {mean_offset:.1f} dB."
         )
 
-    def test_far_field_penalty(self):
-        """At d = 10 km >> breakpoint (2 km), two-ray adds ~20 dB vs Friis.
+    def test_far_field_penalty_deep(self):
+        """Deep in the far field (~50 km) the 1/d^4 penalty reaches ~18 dB.
 
-        Beyond the breakpoint, PL_two_ray ≈ FSPL + 20*log10(d²/(hT*hR))
-        minus a constant. The additional loss at 10 km for hT=30m, hR=2m
-        should be in the range 15–25 dB above Friis.
-
-        Reference: Toonen et al. (2021) show received power ~20 dB below
-        Friis at 10 km for εr=3 — your result should be within ±5 dB.
+        The +20 dB rule-of-thumb applies far beyond the breakpoint, NOT at
+        10 km (only 5x the 2 km breakpoint, where the excess is ~4 dB).
         """
-        d = 10_000.0
+        d = 50_000.0
         pl_tr = two_ray.path_loss_db(d, 30.0, 2.0, 2.5e9)
         pl_fs = friis.fspl_db(d, 2.5e9)
         delta = pl_tr - pl_fs
-        assert 10 < delta < 35, (
-            f"Two-ray should add 15–25 dB at 10 km (got Δ={delta:.1f} dB). "
-            "Cross-check against Toonen et al. (2021) Fig. 4."
+        assert 12.0 < delta < 25.0, (
+            f"Two-ray should add ~18 dB at 50 km, got {delta:.1f} dB."
+        )
+
+    def test_far_field_penalty_grows_with_distance(self):
+        """Two-ray excess over Friis increases monotonically past breakpoint."""
+        ds = np.array([10_000.0, 20_000.0, 30_000.0, 50_000.0])
+        excess = np.array([
+            float(two_ray.path_loss_db(d, 30.0, 2.0, 2.5e9) - friis.fspl_db(d, 2.5e9))
+            for d in ds
+        ])
+        assert np.all(np.diff(excess) > 0), (
+            f"Two-ray excess must grow with distance; got {excess}."
         )
 
     def test_path_loss_increases_with_distance(self):
