@@ -162,7 +162,7 @@ class TestDiffraction:
     @pytest.mark.parametrize("nu, expected_db", [
         (-1.0,  0.0),    # deep clearance
         ( 0.0,  6.0),    # grazing (Huygens principle: −6 dB vs free-space)
-        ( 1.0, 12.0),    # moderate obstruction [P526 Table 1]
+        (1.0, 13.9),    # moderate obstruction [P526 Table 1]
         (11.5, 33.0),    # 200-m rim at S-band, d=5 km  (calculated from P526)
         (38.0, 44.0),    # same rim at Ka-band
     ])
@@ -177,8 +177,8 @@ class TestDiffraction:
     def test_nu_parameter_200m_rim_sband(self):
         """200-m rim at midpoint, d1=d2=2500 m, S-band → ν ≈ 11.5 [P526 eq.13]."""
         nu = diffraction.fresnel_kirchhoff_parameter(200, 2500, 2500, 2.5e9)
-        assert abs(nu - 11.5) < 0.5, (
-            f"Expected ν ≈ 11.5 for 200-m rim at S-band midpoint, got {nu:.2f}. "
+        assert abs(nu - 23.1) < 0.5, (
+            f"Expected ν ≈ 23.1 for 200-m rim at S-band midpoint, got {nu:.2f}. "
             "Check: ν = h·√(2/λ·(1/d1+1/d2))"
         )
 

@@ -1,185 +1,94 @@
 """
-Terrain diffraction loss — ITU-R P.526-15 (Deygout multi-edge method).
+Terrain diffraction loss -- ITU-R P.526-15 (Deygout multi-edge method).
+Student 1 (S1) -- Week 4 implementation.
 
-**Student 1 (S1) — Week 4 implementation task.**
-See TASKS.md § S1-W4.
+Formulas verified against ITU-R P.526-15:
+  Fresnel-Kirchhoff parameter (eq. 13):
+      nu = h * sqrt( 2/lambda * (1/d1 + 1/d2) )
+  Knife-edge loss (eq. 14, valid nu >= -0.78):
+      J(nu) = 6.9 + 20*log10( sqrt((nu-0.1)**2 + 1) + nu - 0.1 )
+      J(nu) = 0  for nu < -0.78
 
-Physical model
---------------
-When the direct path between BTS and UE is blocked by a crater rim or
-ridge, the signal diffracts over the edge. The ITU-R P.526-15 knife-edge
-model computes the additional attenuation as a function of the Fresnel-
-Kirchhoff diffraction parameter ν.
-
-For a single knife-edge obstacle of height h above the line of sight,
-with distances d₁ (Tx→edge) and d₂ (edge→Rx):
-
-    ν = h · √(2·(d₁ + d₂) / (λ·d₁·d₂))
-         = h · √(2/λ · (1/d₁ + 1/d₂))
-
-    J(ν) ≈ 6.9 + 20·log10(√((ν−0.1)² + 1) + ν − 0.1)  dB    [ν > −0.78]
-
-For multiple edges (Deygout method): apply the dominant-edge approximation
-iteratively — find the edge with maximum ν, compute its diffraction loss,
-then recurse on the sub-paths.
-
-Source equations
------------------
-ITU-R Recommendation P.526-15 (2019). Propagation by diffraction.
-    Available free: https://www.itu.int/rec/R-REC-P.526/en
-    See Section 4.1 (knife-edge), Section 4.2 (multiple edges / Deygout).
-
-Boithias, L. (1987). Radio Wave Propagation. North Oxford Academic.
-    Chapter 4 (Deygout original method reference).
-
-Baseline comparison
---------------------
-The lunar south-pole terrain has crater rims 200–2 000 m above surrounding
-plains. At S-band (λ=0.12 m) with a 200-m rim peak midway between BTS and
-rover at 5 km separation:
-
-    ν = 200 · √(2/(0.12 · 2500 · 2500)) ≈ 11.5
-    J(ν) ≈ 33 dB
-
-Compare to UHF (λ=0.68 m): ν ≈ 4.9, J ≈ 26 dB.
-Ka-band (λ=0.011 m): ν ≈ 38, J ≈ 44 dB.
-
-Published benchmark:
-Toonen et al. (2021) do NOT include terrain diffraction (line-of-sight only).
-Jun et al. (2025), IEEE Access, adds diffraction over LOLA terrain profiles
-for equatorial links. Your task: apply Deygout to PGDA-78 south-pole profiles.
+NOTE: the original scaffold's worked example ("nu ~ 11.5" for a 200 m rim)
+was incorrect -- the correct value from eq. 13 is ~23.1 for a 200 m rim at
+S-band midpoint (11.5 corresponds to a ~100 m rim). The formulas here are the
+verified ITU-R ones.
 """
-
 import numpy as np
 
+_C = 299792458.0  # m/s
 
-def fresnel_kirchhoff_parameter(
-    h_m: float | np.ndarray,
-    d1_m: float | np.ndarray,
-    d2_m: float | np.ndarray,
-    freq_hz: float,
-) -> float | np.ndarray:
-    """Fresnel-Kirchhoff diffraction parameter ν.
 
-    TODO (S1, Week 4):
-        Implement:
-            ν = h · √(2/λ · (1/d₁ + 1/d₂))
-              = h · √(2·f/c · (d₁+d₂)/(d₁·d₂))
+def fresnel_kirchhoff_parameter(h_m, d1_m, d2_m, freq_hz):
+    """ITU-R P.526-15 eq. 13 diffraction parameter nu.
 
-        where h is the height of the obstacle ABOVE the straight line
-        connecting Tx and Rx (positive = obstacle above LOS,
-        negative = clearance below LOS).
+        nu = h * sqrt( 2/lambda * (1/d1 + 1/d2) ),  lambda = c/f
 
-        Test targets:
-            fresnel_kirchhoff_parameter(200, 2500, 2500, 2.5e9) ≈ 11.5
-            fresnel_kirchhoff_parameter(-10, 2500, 2500, 2.5e9) < 0  (clearance)
-            fresnel_kirchhoff_parameter(0,  2500, 2500, 2.5e9) ≈ 0   (grazing)
-
-    Parameters
-    ----------
-    h_m : height of obstacle above Tx–Rx line of sight (metres).
-          Negative = obstacle below LOS (clearance).
-    d1_m : distance Tx → obstacle (metres).
-    d2_m : distance obstacle → Rx (metres).
-    freq_hz : carrier frequency (Hz).
-
-    Returns
-    -------
-    nu : float or ndarray
+    h_m > 0 : obstacle above the Tx-Rx line of sight (diffraction loss).
+    h_m < 0 : clearance below LOS (nu < 0, little/no loss).
     """
-    raise NotImplementedError(
-        "TODO (S1, Week 4): implement Fresnel-Kirchhoff parameter. "
-        "See ITU-R P.526-15, eq. (13)."
-    )
+    h = np.asarray(h_m, dtype=float)
+    d1 = np.asarray(d1_m, dtype=float)
+    d2 = np.asarray(d2_m, dtype=float)
+    lam = _C / float(freq_hz)
+    return h * np.sqrt(2.0 / lam * (1.0 / d1 + 1.0 / d2))
 
 
-def knife_edge_loss_db(nu: float | np.ndarray) -> float | np.ndarray:
-    """Knife-edge diffraction loss J(ν) in dB (positive = loss).
+def knife_edge_loss_db(nu):
+    """ITU-R P.526-15 eq. 14 knife-edge diffraction loss J(nu) in dB.
 
-    TODO (S1, Week 4):
-        Implement the ITU-R P.526-15 approximation (Section 4.1, eq. 14):
-
-            J(ν) = 0                                          if ν < −0.78
-            J(ν) = 6.9 + 20·log10(√((ν−0.1)² + 1) + ν−0.1)  if ν ≥ −0.78
-
-        Test targets:
-            knife_edge_loss_db(-1.0) ≈ 0 dB      (deep clearance, no loss)
-            knife_edge_loss_db(0.0)  ≈ 6 dB      (grazing, −6 dB vs free space)
-            knife_edge_loss_db(1.0)  ≈ 12.0 dB
-            knife_edge_loss_db(11.5) ≈ 33 dB     (200-m rim at S-band)
-            knife_edge_loss_db(38)   ≈ 44 dB     (200-m rim at Ka-band)
-
-        Cross-check: ITU-R P.526-15 Table 1 gives J for integer ν values.
-
-    Parameters
-    ----------
-    nu : float or array-like
-        Fresnel-Kirchhoff diffraction parameter.
-
-    Returns
-    -------
-    J_db : float or ndarray
-        Diffraction loss in dB.
+        J = 0                                                nu < -0.78
+        J = 6.9 + 20 log10( sqrt((nu-0.1)^2 + 1) + nu-0.1 )  otherwise
     """
-    raise NotImplementedError(
-        "TODO (S1, Week 4): implement knife-edge loss. "
-        "See ITU-R P.526-15, eq. (14) and Table 1."
-    )
+    nu = np.asarray(nu, dtype=float)
+    j = 6.9 + 20.0 * np.log10(np.sqrt((nu - 0.1) ** 2 + 1.0) + nu - 0.1)
+    out = np.where(nu < -0.78, 0.0, j)
+    return float(out) if np.ndim(out) == 0 else out
 
 
-def deygout_loss_db(
-    profile_heights_m: np.ndarray,
-    profile_distances_m: np.ndarray,
-    h_tx_m: float,
-    h_rx_m: float,
-    freq_hz: float,
-    max_edges: int = 3,
-) -> float:
-    """Multi-edge diffraction loss via the Deygout method (dB).
+def _height_above_los(profile_heights_m, profile_distances_m, h_tx_m, h_rx_m):
+    """Height of each profile point above the straight Tx-Rx line."""
+    d = np.asarray(profile_distances_m, dtype=float)
+    h = np.asarray(profile_heights_m, dtype=float)
+    tx_elev = h[0] + h_tx_m
+    rx_elev = h[-1] + h_rx_m
+    total = d[-1] - d[0]
+    los = tx_elev + (rx_elev - tx_elev) * (d - d[0]) / total
+    return h - los
 
-    TODO (S1, Week 4–5):
-        Implement the Deygout dominant-edge algorithm:
 
-        1. Given a terrain height profile (h[i] at distance x[i]):
-           a. Compute the height of each profile point ABOVE the Tx–Rx line.
-           b. Find the index i* with maximum ν (dominant edge).
-           c. Compute J(ν_i*) as the main diffraction loss.
-           d. Recursively apply steps a–c to the sub-paths
-              [Tx → i*] and [i* → Rx], up to max_edges total.
-           e. Sum all J values.
+def deygout_loss_db(profile_heights_m, profile_distances_m,
+                    h_tx_m, h_rx_m, freq_hz, max_edges=3):
+    """Deygout dominant-edge multi-edge diffraction loss (dB).
 
-        Source: ITU-R P.526-15, Section 4.2.2 (Deygout modified method).
-        Also: Boithias (1987) for original formulation.
-
-        Validation: for a single knife-edge at the midpoint, deygout_loss_db()
-        must match knife_edge_loss_db(fresnel_kirchhoff_parameter(...)) exactly.
-
-        Lunar application:
-            Input a 1-D profile extracted from PGDA-78 DEM along the great-circle
-            path between BTS and UE (use lunarcomms.io.pgda.extract_profile()).
-            Output the diffraction loss to add to the two-ray path loss.
-
-    Parameters
-    ----------
-    profile_heights_m : ndarray, shape (N,)
-        Terrain elevation in metres (lunar surface, PGDA-78 datum).
-    profile_distances_m : ndarray, shape (N,)
-        Cumulative distance along path in metres (same length as heights).
-    h_tx_m : float
-        Transmit antenna height above terrain at Tx location.
-    h_rx_m : float
-        Receive antenna height above terrain at Rx location.
-    freq_hz : float
-        Carrier frequency in Hz.
-    max_edges : int
-        Maximum number of dominant edges to consider (default 3).
-
-    Returns
-    -------
-    loss_db : float
-        Total multi-edge diffraction loss in dB.
+    Recursively: find the point of maximum nu between the endpoints; add its
+    knife-edge loss; recurse on the Tx->peak and peak->Rx sub-paths, up to
+    max_edges dominant edges. Reduces exactly to a single knife edge for a
+    lone obstacle.
     """
-    raise NotImplementedError(
-        "TODO (S1, Week 4–5): implement Deygout multi-edge diffraction. "
-        "See ITU-R P.526-15 Section 4.2.2."
-    )
+    d = np.asarray(profile_distances_m, dtype=float)
+    h = np.asarray(profile_heights_m, dtype=float)
+
+    def recurse(i0, i1, edges_left):
+        if i1 - i0 < 2 or edges_left <= 0:
+            return 0.0
+        lo, hi = i0 + 1, i1
+        d1 = d[lo:hi] - d[i0]
+        d2 = d[i1] - d[lo:hi]
+        tx_e = h[i0] + (h_tx_m if i0 == 0 else 0.0)
+        rx_e = h[i1] + (h_rx_m if i1 == len(d) - 1 else 0.0)
+        span = d[i1] - d[i0]
+        los = tx_e + (rx_e - tx_e) * (d[lo:hi] - d[i0]) / span
+        hsub = h[lo:hi] - los
+        nus = fresnel_kirchhoff_parameter(hsub, d1, d2, freq_hz)
+        k = int(np.argmax(nus))
+        nu_max = nus[k]
+        if nu_max <= -0.78:
+            return 0.0
+        ipk = lo + k
+        loss = knife_edge_loss_db(nu_max)
+        loss += recurse(i0, ipk, edges_left - 1)
+        loss += recurse(ipk, i1, edges_left - 1)
+        return loss
+
+    return float(recurse(0, len(d) - 1, max_edges))
