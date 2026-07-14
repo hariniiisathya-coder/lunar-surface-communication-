@@ -33,6 +33,7 @@ Public DEM product:
 """
 
 import numpy as np
+from scipy.ndimage import map_coordinates
 
 
 def compute_horizon_angles(
@@ -128,7 +129,43 @@ def los_mask_from_tx(
     -------
     los_mask : ndarray bool, shape (ny, nx)
     """
-    raise NotImplementedError(
-        "TODO (S1, Week 4): implement Tx→all-pixels LOS mask. "
-        "Validate against LROC QuickMap visibility at Connecting Ridge."
-    )
+    ny, nx = dem.shape
+    mask = np.zeros((ny, nx), dtype=bool)
+    tx_h = dem[tx_row, tx_col] + h_tx_m
+    for i in range(ny):
+        for j in range(nx):
+            if i == tx_row and j == tx_col:
+                mask[i, j] = True
+                continue
+            heights, dist = extract_profile(
+                dem, tx_row, tx_col, i, j, pixel_size_m
+            )
+            rx_h = dem[i, j] + h_rx_m
+            total = dist[-1]
+            if total == 0 or len(heights) < 3:
+                mask[i, j] = True
+                continue
+            ray = tx_h + (rx_h - tx_h) * (dist / total)
+            clearance = ray[1:-1] - heights[1:-1]
+            mask[i, j] = bool(np.all(clearance >= 0))
+    return mask
+
+
+def extract_profile(dem, tx_row, tx_col, rx_row, rx_col, pixel_size_m,
+                    n_samples=None):
+    """Sample DEM elevation along the straight pixel line Tx->Rx.
+
+    Returns (heights, distances_m): elevation samples (m) and their horizontal
+    ground distance from Tx (m). Bilinear interpolation via map_coordinates.
+    """
+    r0, c0 = float(tx_row), float(tx_col)
+    r1, c1 = float(rx_row), float(rx_col)
+    npix = int(np.hypot(r1 - r0, c1 - c0))
+    if n_samples is None:
+        n_samples = max(npix + 1, 2)
+    rows = np.linspace(r0, r1, n_samples)
+    cols = np.linspace(c0, c1, n_samples)
+    heights = map_coordinates(dem, np.vstack([rows, cols]), order=1,
+                              mode="nearest")
+    seg = np.hypot(rows - r0, cols - c0) * pixel_size_m
+    return heights, seg
