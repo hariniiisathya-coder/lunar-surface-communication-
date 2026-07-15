@@ -96,9 +96,7 @@ def received_power_dbm(
     p_rx : float or ndarray
         Received power in dBm.
     """
-    raise NotImplementedError(
-        "TODO (S1/S2, Week 2): implement link budget power equation."
-    )
+    return eirp_dbm - path_loss_db + rx_gain_dbi - rx_losses_db
 
 
 def link_margin_db(
@@ -119,11 +117,7 @@ def link_margin_db(
     margin : float or ndarray
         Link margin in dB. Negative → link does not close.
     """
-    raise NotImplementedError(
-        "TODO (S1/S2, Week 2): implement link margin. "
-        "See 3GPP TS 38.101-1 Table 7.3.2-1 for sensitivity reference."
-    )
-
+    return p_rx_dbm - sensitivity_dbm
 
 def max_range_m(
     eirp_dbm: float,
