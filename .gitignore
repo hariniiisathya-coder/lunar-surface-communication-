@@ -1,54 +1,5 @@
-# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.eggs/
-*.egg
+*.pyc
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
-htmlcov/
-.coverage
-coverage.xml
-
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# Virtual environments
-.venv/
-venv/
-env/
-.env
-
-# SPICE kernels — large binary files, not committed
-data/kernels/*.bsp
-data/kernels/*.tls
-data/kernels/*.tpc
-data/kernels/*.tf
-data/kernels/*.tsc
-data/kernels/*.tm
-# Exception: keep the download manifest
-!data/kernels/kernels_manifest.json
-
-# DEM rasters — very large, not committed
-data/dems/*.tif
-data/dems/*.img
-data/dems/*.lbl
-data/dems/*.hdr
-# Exception: keep tile manifest and metadata
-!data/dems/pgda_manifest.json
-!data/dems/README_dems.md
-
-# Generated outputs
-outputs/
-figures/
-*.png
-*.pdf
-*.eps
-
-# OS
 .DS_Store
-Thumbs.db
+.idea/
