@@ -1,0 +1,388 @@
+Metadata-Version: 2.4
+Name: lunarcomms
+Version: 0.1.0
+Summary: Open-source toolchain for lunar wireless communications research
+Author: Lunar Comms Survey Team
+License: MIT License
+        
+        Copyright (c) 2025 Lunar Comms Survey Contributors
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Project-URL: Repository, https://github.com/ebaenamar/lunar-comms-survey
+Project-URL: Issues, https://github.com/ebaenamar/lunar-comms-survey/issues
+Keywords: lunar,communications,propagation,5G,NTN,DTN,SPICE
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: matplotlib>=3.7
+Requires-Dist: rasterio>=1.3
+Requires-Dist: pyproj>=3.5
+Requires-Dist: spiceypy>=6.0
+Requires-Dist: astropy>=5.3
+Requires-Dist: pandas>=2.0
+Requires-Dist: tqdm>=4.65
+Requires-Dist: requests>=2.31
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4; extra == "dev"
+Requires-Dist: pytest-cov>=4.1; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
+Requires-Dist: mypy>=1.5; extra == "dev"
+Requires-Dist: jupyter>=1.0; extra == "dev"
+Requires-Dist: ipykernel>=6.25; extra == "dev"
+Requires-Dist: notebook>=7.0; extra == "dev"
+Provides-Extra: sionna
+Requires-Dist: sionna>=0.19; extra == "sionna"
+Requires-Dist: tensorflow>=2.13; extra == "sionna"
+Dynamic: license-file
+
+# lunar-comms-survey
+
+**A living survey and open-source toolchain for lunar wireless communications.**
+
+[![CI](https://github.com/ebaenamar/lunar-comms-survey/actions/workflows/ci.yml/badge.svg)](https://github.com/ebaenamar/lunar-comms-survey/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+
+---
+
+## What this is
+
+This repository pairs a **structured technical survey** of lunar communications methodology with a **minimal, reproducible Python toolchain** that closes the most accessible gaps. It is designed to be useful to:
+
+- Students beginning research in lunar wireless communications.
+- Researchers who need validated open-source implementations of lunar propagation models.
+- Mission engineers who want reproducible link budgets and coverage maps for south-pole lunar scenarios.
+
+The survey identifies, for each topic area, what the published literature actually measures, what it silently assumes, and where the open-source tooling is missing. Every gap maps to a module in this package.
+
+---
+
+## Background: why this exists
+
+NASA Artemis, LCRNS (Lunar Communications Relay and Navigation Services), ESA Moonlight/Lunar Pathfinder, and CNSA Queqiao-2 are building the first permanent lunar communications infrastructure. Future operations at the lunar south pole will require RF links among astronauts, rovers, habitats, landers, relays in elliptical lunar frozen orbits (ELFO), and Earth ground stations.
+
+Despite growing interest, **no public open-source toolchain** integrates:
+- Realistic lunar terrain (LOLA/PGDA 5 m DEMs) with validated regolith dielectric models.
+- Correct ELFO relay geometry from public ephemerides.
+- Surface propagation physics beyond a generic Friis equation.
+
+This repository builds that toolchain incrementally, documented by the survey.
+
+---
+
+## The three research tracks
+
+This repo supports three parallel summer internship tracks. All three share the same scenario: a lander/BTS at **Connecting Ridge** (lunar south pole), a relay in **LCRNS/Moonlight ELFO** (~17 400 km apoapsis, ~30 h period), and Earth ~1.28 light-seconds away.
+
+```
+  ┌─────────┐
+  │   DSN   │  Earth (1.28 s one-way)
+  └────┬────┘
+       │ X-band trunk
+  ┌────┴─────────┐
+  │ LCRNS / Lunar│  ELFO: ~30 h period, apoapsis over south pole
+  │ Pathfinder   │  ~15–20 h visible per orbit from surface
+  └────┬─────────┘
+       │ S-band 2.5 GHz (SFCGb1 / LunaNet AFS 2492 MHz)
+  ┌────┴────┐
+  │ Lander  │  Connecting Ridge  (~89.5°S, elevation ~3 200 m)
+  │  / BTS  │  BTS antenna height 10–30 m
+  └────┬────┘
+       │ 5G NR surface  (S-band / UHF)
+  ┌────┴────┐
+  │Rover/EVA│  ~1–10 km radius, antenna 2 m height
+  └─────────┘
+```
+
+| Track | Owner | Key modules | Survey chapters |
+|-------|-------|-------------|----------------|
+| **S1** Surface RF propagation + coverage maps | Student 1 | `regolith`, `propagation`, `coverage`, `io` | 03, 04 |
+| **S2** 3GPP/5G protocol feasibility study (no implementation) | Student 2 | consumes S3 geometry outputs | 02, 05 |
+| **S3** DTN / Solar System Internet | Student 3 | `orbits`, `geometry` (contact plans) | 02, 06 |
+
+---
+
+## Repository structure
+
+```
+lunar-comms-survey/
+├── README.md                        # this file
+├── TASKS.md                         # student task assignments and open issues
+├── CITATION.cff                     # how to cite this repo
+├── pyproject.toml                   # single dependency list
+├── environment.yml                  # conda alternative
+├── LICENSE
+│
+├── lunarcomms/                      # installable Python package
+│   ├── geometry/                    # SPICE kernels, frames, horizon masking
+│   │   ├── frames.py                # ME↔PA frame rotation, DE421↔DE440
+│   │   └── horizon.py               # raycasting horizon mask from DEM
+│   ├── orbits/                      # relay orbit propagation and contact plans
+│   │   ├── elfo.py                  # ELFO Keplerian propagation, Folta-Quinn design
+│   │   └── lcrns.py                 # LCRNS Reference Constellation 3.1 loader
+│   ├── regolith/                    # dielectric models (FIRST MODULE — start here)
+│   │   └── dielectric.py            # Olhoeft+Strangway 1975, Siegler 2020
+│   ├── propagation/                 # RF propagation models
+│   │   ├── friis.py                 # free-space path loss
+│   │   ├── two_ray.py               # two-ray ground reflection over regolith
+│   │   └── diffraction.py           # ITU-R P.526-15 multi-edge Deygout
+│   ├── coverage/                    # link margin → GeoTIFF
+│   │   └── link_budget.py
+│   └── io/                          # data readers
+│       └── pgda.py                  # PGDA GeoTIFF reader (polar stereographic)
+│
+├── tests/
+│   ├── test_regolith.py             # validated against Olhoeft 1975 Table 2
+│   ├── test_propagation.py          # free-space limit + breakpoint check
+│   └── test_geometry.py             # SPICE Earth-Moon distance vs Horizons
+│
+├── docs/
+│   ├── survey/                      # the living survey (one .md per chapter)
+│   │   ├── 00-scope.md
+│   │   ├── 01-geometry-and-frames.md
+│   │   ├── 02-relay-architectures.md
+│   │   ├── 03-rf-propagation.md
+│   │   ├── 04-regolith-dielectrics.md
+│   │   ├── 05-3gpp-on-the-moon.md
+│   │   ├── 06-dtn-and-solar-system-internet.md
+│   │   ├── 07-tooling-and-gaps.md
+│   │   ├── 08-open-problems.md
+│   │   └── references.bib           # BibTeX — add entries here
+│   └── tutorials/                   # worked Jupyter notebooks
+│
+├── notebooks/
+│   ├── 01-load-spice-and-de440.ipynb
+│   ├── 02-open-pgda-dem.ipynb
+│   ├── 03-propagate-lcrns-elfo.ipynb
+│   ├── 04-horizon-mask-from-dem.ipynb
+│   ├── 05-regolith-dielectric-map.ipynb
+│   ├── 06-two-ray-and-fresnel.ipynb
+│   └── 07-first-link-budget.ipynb
+│
+├── data/
+│   ├── README_data.md               # how to download all datasets
+│   ├── kernels/                     # SPICE kernels (NOT committed — see download script)
+│   ├── dems/                        # PGDA DEM tile manifests (JSON only)
+│   └── orbits/                      # LCRNS 3.1 reference states (JSON)
+│
+└── .github/
+    └── workflows/
+        └── ci.yml                   # run pytest on every push
+```
+
+---
+
+## Quick start
+
+### Install
+
+```bash
+git clone https://github.com/ebaenamar/lunar-comms-survey.git
+cd lunar-comms-survey
+pip install -e ".[dev]"
+```
+
+Or with conda:
+
+```bash
+conda env create -f environment.yml
+conda activate lunarcomms
+pip install -e ".[dev]"
+```
+
+### Download data
+
+```bash
+python data/download_kernels.py      # SPICE DE440 + lunar PCK (~150 MB)
+python data/download_pgda.py         # PGDA-78 south pole DEM 5 m (~2 GB tile)
+```
+
+### Run tests
+
+```bash
+pytest tests/ -v
+```
+
+### First result (< 5 min from install)
+
+```python
+from lunarcomms.regolith import dielectric
+
+# Bulk density of lunar regolith surface layer (Carrier et al. 1991)
+rho = 1.50  # g/cm^3
+
+# Dielectric properties at S-band
+eps_r   = dielectric.permittivity(rho)        # → 2.69
+tan_d   = dielectric.loss_tangent(rho, 2.5)   # → 0.0082 at 2.5 GHz
+
+print(f"ε' = {eps_r:.3f},  tan δ = {tan_d:.4f}")
+```
+
+---
+
+## Survey structure
+
+Each chapter in `docs/survey/` follows a fixed five-part template:
+
+1. **What the literature does** — models used, datasets, key papers.
+2. **Silent assumptions** — what is extrapolated or assumed without measurement support.
+3. **Measurement support vs. extrapolation** — explicit audit of credibility.
+4. **The gap** — named in one sentence.
+5. **This repo's response** — link to the module that addresses it, or `TODO` if open.
+
+This structure makes the survey a specification for the codebase, not just a bibliography.
+
+---
+
+## Adding references
+
+All references live in `docs/survey/references.bib`. Add BibTeX entries there and cite them in survey chapters as `[@key]`. Run `make survey` (coming soon) to render the full survey to PDF via Pandoc + pandoc-citeproc.
+
+The format for an entry is standard BibTeX:
+
+```bibtex
+@article{olhoeft1975,
+  author  = {Olhoeft, G. R. and Strangway, D. W.},
+  title   = {Dielectric properties of the first 100 meters of the Moon},
+  journal = {Earth and Planetary Science Letters},
+  year    = {1975},
+  volume  = {24},
+  pages   = {394--408},
+  doi     = {10.1016/0012-821X(75)90146-6}
+}
+```
+
+---
+
+## Key contributions
+
+Beyond toolchain infrastructure, this project makes **analytical contributions** that are
+novel in the published lunar-communications literature:
+
+### Regulatory bandwidth ceiling analysis (S2, S2-W5 Part B)
+
+No prior 5G-on-Moon paper has systematically mapped the SFCG/ITU pre-assigned lunar
+frequency bands to per-link Shannon capacity ceilings. This project derives those ceilings
+explicitly and identifies the dominant bottleneck in the ELFO relay chain.
+
+The core finding, grounded in SFCG Recommendation 41-1 (2023) and the ICG-17 Lunar
+Spectrum Architecture (UNOOSA, 2023):
+
+> **The pre-assigned bands do fix per-link capacity ceilings.
+> The technology determines spectral efficiency *within* those ceilings — not the other way round.**
+
+Key results:
+
+| Link | Assigned band | Max alloc BW | Shannon ceiling (indicative) | Limiting factor |
+|------|--------------|-------------|------------------------------|----------------|
+| Rover ↔ lander (5G island) | SFCGb1 2503.5–2655 MHz | ~116 MHz | ~100–300 Mbps (5G NR, MIMO 4×4) | SNR / SWaP |
+| Surface → ELFO (S-band) | 2200–2290 MHz | **< 6 MHz** (SFCG 41-1) | **~2–4 Mbps** | **Regulatory BW cap** |
+| Surface → ELFO (Ka-band) | 27.0–27.5 GHz | up to 400 MHz | ~50–500 Mbps | SNR at low elevation |
+| ELFO → Earth (Ka DWE) | 23.15–23.55 GHz | up to 400 MHz | ~50–500 Mbps | DSN scheduling |
+
+The **SFCG 41-1 rule** is the key regulatory constraint:
+> *"Links with occupied bandwidth ≥ 6 MHz must use Ka-band only.
+> S-band backhaul is therefore capped at < 6 MHz — approximately 2–4 Mbps raw — regardless
+> of what 5G NR delivers on the surface."*
+
+This means the **surface↔ELFO S-band link is the bottleneck**, not the ELFO↔Earth Ka-band
+feeder (which can carry hundreds of Mbps). Switching to Ka-band backhaul eliminates the
+bottleneck at the cost of ~5–15 W additional ELFO payload power. This finding directly
+motivates the transparent vs. regenerative ELFO architecture comparison (RQ4) and grounds
+the PHY-aware DTN capacity formulation in S2-W5b:
+```
+C_eff = B_alloc × η_spectral × η_coding × η_protocol × η_contact
+```
+where `B_alloc` is now a **regulatory quantity** (from SFCG 32-2R6 / 41-1), not a free
+design parameter.
+
+**Sources verified by direct PDF parse (pdftotext):**
+- NTRS 20240011047 — *International Coordination and Cooperation on LunaNet Spectrum* (2024)
+- ICG-17 Lunar Spectrum Overview — UNOOSA Working Group B (2023)
+- ITU SFCG Overview (Catherine Sham, ITU-R Science Services Seminar, 2025)
+- SFCG Recommendations 32-2R6, 41-1, 42-1, 43-1
+
+---
+
+## How Tasks are Managed (`TASKS.md`)
+
+All technical objectives, student milestones, and testing requirements are centralized in `@/Users/e.baena/CascadeProjects/lunar-comms-survey/TASKS.md:1`. This file functions as the authoritative task tracker and code specification.
+
+The task structure spans a 10-week summer roadmap:
+1. **Week 0 — Common Ground:** All students collaborate to establish mathematical baselines (Earth-Moon delay, radio horizon calculations) and inspect the target terrain at Connecting Ridge.
+2. **Weeks 1–5 — Core Modules:** Individual weekly tasks defining exact files, equations, and unit tests to implement.
+3. **Weeks 6–10 — Integration & Paper Writing:** Combining the modules for end-to-end simulation, generating final GeoTIFF coverage maps, and drafting publication-ready survey chapters.
+
+Every task contains **explicit Acceptance Criteria** and key validation numbers that must be verified against published literature (e.g., matching [S20] loss tangent or [Ryden2025] LCRNS orbital elements) before committing.
+
+---
+
+## Contributing
+
+This is an active research and summer internship repository. Contributors are responsible for:
+
+- **Implementing assigned track modules** according to `@/Users/e.baena/CascadeProjects/lunar-comms-survey/TASKS.md:1`.
+- **Evolving the living survey** inside `@/Users/e.baena/CascadeProjects/lunar-comms-survey/docs/survey/` following the 5-part template.
+- **Validating modifications** locally via `pytest tests/ -v` and checking `ruff` linting compliance before pushing.
+- **Adding newly cited papers** directly to `@/Users/e.baena/CascadeProjects/lunar-comms-survey/docs/survey/references.bib:1`.
+
+---
+
+## License
+
+MIT License. See `LICENSE`.
+
+---
+
+## Citation
+
+If you use this repository in your work, please cite it using the metadata in `CITATION.cff`.
+
+---
+
+## Key references
+
+A subset of the most important references for this project. Full list in `docs/survey/references.bib`.
+
+| Reference | What it provides |
+|-----------|-----------------|
+| Olhoeft & Strangway (1975) | Canonical regolith permittivity formula ε' = 1.919^ρ |
+| Siegler et al. (2020) | Global regolith loss tangent map |
+| Mazarico et al. (2011) | South pole illumination model (Shackleton, PSRs) |
+| Folta & Quinn (2006) | ELFO design — canonical reference for relay orbits |
+| Edwards et al. (2023) | 3GPP/5G on the Moon — surface link budget, system-level analysis |
+| LunaNet ICD v5 | LunaNet Interoperability Specification |
+| SFCG REC 32-2R6 (2025) | Lunar frequency coordination — all link types and PNT |
+| SFCG REC 41-1 (2023) | Key bandwidth rule: ≥6 MHz links → Ka-band only; establishes S-band cap |
+| SFCG REC 42-1 (2024) | Ka-band channel plan for lunar in-situ relay satellites |
+| SFCG REC 43-1 (2025) | PNT band (2483.5–2500 MHz) protection from surface 5G emissions |
+| NTRS 20240011047 (Sham et al., 2024) | LunaNet Ka-band spectrum coordination; regulatory bandwidth ceilings |
+| ICG-17 Lunar Spectrum Architecture (UNOOSA, 2023) | Per-link band assignments across the full lunar architecture |
+| CCSDS 734.2-B-2 | Bundle Protocol v7 specification |
+| LCRNS Ref. Const. 3.1 (NTRS 20250002698) | LCRNS ephemerides and orbit parameters |
+| Toonen et al. (2022) | Lunar surface-to-surface coverage baseline |
