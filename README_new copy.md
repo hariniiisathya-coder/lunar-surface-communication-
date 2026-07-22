@@ -54,67 +54,115 @@ prior published lunar coverage model (e.g. Edwards et al., 2023) captures.
   understate both bands' true sensitivity unevenly.
 
 ## Repository structure
-cat > README.md << 'MDEOF'
-# lunar-comms-survey — S1 Surface RF Propagation & Coverage
 
-A validated, open-source Python pipeline for predicting radio coverage on
-the lunar surface, combining LOLA/PGDA-78 terrain diffraction with
-spatially-variable regolith dielectrics. Built as the Student-1 (S1) track
-of a summer research project on lunar wireless communications.
+```
+lunar-comms-survey/
+├── lunarcomms/                  # installable Python package
+│   ├── regolith/
+│   │   └── dielectric.py        # Olhoeft+Strangway 1975 permittivity;
+│   │                             # Siegler 2020 spatially-variable loss tangent
+│   ├── propagation/
+│   │   ├── friis.py             # free-space path loss
+│   │   ├── two_ray.py           # two-ray ground reflection, real & spatial Fresnel
+│   │   └── diffraction.py       # ITU-R P.526-15 knife-edge + Deygout multi-edge
+│   ├── coverage/
+│   │   └── link_budget.py       # combines LOS + two-ray + Deygout into a
+│   │                             # link-margin map; exports GeoTIFF
+│   ├── io/
+│   │   └── pgda.py              # PGDA DEM reader; Siegler a'/b' map sampler
+│   └── geometry/
+│       └── horizon.py           # line-of-sight raycasting from a fixed TX,
+│                                 # terrain profile extraction (this track's own)
+│                                 # (frames.py: shared Earth-Moon geometry
+│                                 #  utility inherited from the project scaffold)
+│
+├── build_dielectric.py          # generator: writes regolith/dielectric.py
+├── build_pgda.py                # generator: writes io/pgda.py
+│                                 # (edit these, not the generated modules —
+│                                 #  re-running a generator overwrites its output)
+│
+├── analysis/                    # investigation & validation scripts (not
+│   │                             # part of the installable package)
+│   ├── run_baseline_table.py        # 4-level fidelity comparison
+│   ├── run_baseline_3level.py       # 3-level fallback (no Siegler files needed)
+│   ├── run_threeband_baseline.py    # UHF/S/Ka terrain-aware comparison + figure
+│   ├── dielectric_sensitivity.py    # incidence-angle + forced-permittivity checks
+│   ├── dielectric_sensitivity_v2.py # per-pixel margin sensitivity diagnostic
+│   ├── link_budget_stress_test.py   # coverage-% sensitivity vs EIRP sweep
+│   ├── dielectric_by_band.py        # S-vs-Ka dielectric prediction test
+│   ├── dielectric_by_band_recheck.py# same, at 10x finer EIRP resolution
+│   ├── margin_sensitivity_by_band.py# per-pixel margin sensitivity, S vs Ka
+│   ├── coverage_delta_evidence.py   # standalone repro of the S-vs-Ka result
+│   ├── nu_frequency_scaling_evidence.py # verifies nu ~ sqrt(f) against theory
+│   ├── coverage_vs_eirp.py          # coverage-vs-EIRP curves (LOS-only)
+│   ├── coverage_vs_eirp_terrain.py  # coverage-vs-EIRP, full terrain-aware
+│   ├── coverage_vs_eirp_zoom.py     # zoomed sign-flip visualisation
+│   └── visualize_baseline.py        # 6-panel DEM + 4-level coverage figure
+│
+├── figures/                      # generated outputs (coverage maps, plots)
+│
+├── tests/
+│   ├── test_regolith.py         # 23 tests, anchored to Siegler Table 1/Fig.8
+│   │                             # and the Olhoeft & Strangway relation
+│   ├── test_propagation.py      # 19 tests, anchored to ITU-R P.526-15,
+│   │                             # Rappaport (1996), and analytic FSPL
+│   └── test_geometry.py         # line-of-sight raycasting tests (this
+│                                 # track's own) + shared Earth-Moon tests
+│
+├── data/
+│   ├── dem/Site01/               # PGDA-78 DEM, Connecting Ridge (5 m/pixel)
+│   ├── dem/Site04/                # PGDA-78 DEM, Shackleton rim
+│   ├── kernels/                   # SPICE kernels (de440.bsp not tracked —
+│   │                               # see data/download_kernels.py)
+│   └── Figure 11_Constant Loss Parameter_a'.txt   # Siegler (2020) maps
+│       Figure 11_Frequency Exponent_b'.txt
+│
+├── pyproject.toml, environment.yml, .gitignore, LICENSE
+```
 
-## What this is
-
-Given a transmitter location on a real lunar DEM (LOLA/PGDA-78, 5 m/pixel),
-this pipeline predicts, for every point in the surrounding terrain, whether
-a receiver would have a working radio link — accounting for:
-
-- **Free-space and two-ray propagation**, including a real Fresnel
-  reflection coefficient derived from regolith permittivity.
-- **Spatially-variable regolith dielectric loss**, from validated global
-  loss-tangent maps.
-- **Terrain diffraction** over crater rims and ridges (ITU-R P.526-15
-  Deygout multi-edge method), using real line-of-sight raycasting over the
-  DEM.
-
-The headline finding: **on real terrain at the lunar south pole, coverage
-is set by terrain blockage, not by path loss.** A flat-ground, free-space
-model predicts ~100% coverage over a 2 km test area at Connecting Ridge;
-the terrain-aware model predicts 68.5% — the missing 31.5% is signal lost
-to line-of-sight shadowing behind ridges and crater rims, an effect no
-prior published lunar coverage model (e.g. Edwards et al., 2023) captures.
-
-## Key findings
-
-- **Terrain dominates coverage.** Four-level fidelity comparison (Friis →
-  two-ray → +Deygout diffraction → +spatial dielectric) isolates each
-  physical effect: multipath ≈0% change, terrain diffraction −31.5%,
-  spatial dielectric ≈0% at the nominal link budget.
-- **The terrain-blockage penalty grows with frequency, as predicted.**
-  Tested across UHF (0.442 GHz), S-band (2.5 GHz), and Ka-band (27 GHz) on
-  the same real terrain: penalty rises 5.1% → 31.5% → 47.4%, consistent
-  with the Fresnel-Kirchhoff diffraction parameter's ν ∝ √f scaling
-  (verified to zero numerical difference against theory).
-- **Dielectric variation is real but link-budget-conditional.** Regolith
-  permittivity produces a genuine,
 ## Install
+
+```
+git clone https://github.com/hariniiisathya-coder/lunar-surface-communication-.git
+cd lunar-surface-communication-
+pip install -e ".[dev]"
+```
+
 or with conda:
+
+```
+conda env create -f environment.yml
+conda activate lunarcomms
+pip install -e ".[dev]"
+```
+
 ## Data setup
 
 DEMs for Site01 and Site04 are included in `data/dem/`. The SPICE ephemeris
 kernel (`de440.bsp`, ~114 MB) is not tracked in git (exceeds GitHub's file
 size limit) — download it from NAIF:
+
+```
+python data/download_kernels.py
+```
+
 The Siegler (2020) loss-tangent maps are Zenodo record
 [10.5281/zenodo.3993798](https://doi.org/10.5281/zenodo.3993798) — place
 `Figure 11_Constant Loss Parameter_a'.txt` and
 `Figure 11_Frequency Exponent_b'.txt` in the project root.
 
 ## Run tests
+
+```
+pytest tests/ -v
+```
+
 42 tests in `test_regolith.py` + `test_propagation.py` pass, every expected
 value anchored to a named primary source (not to hand-computed or assumed
 values). `test_geometry.py`'s line-of-sight tests are this track's own; its
 Earth-Moon distance tests are shared common-ground utilities.
 
-## First result
+## First result (validated, not fabricated)
 
 ```python
 from lunarcomms.regolith import dielectric
@@ -144,6 +192,13 @@ tan_d = loss_tangent_ab(a, b, freq_ghz=2.5)
 
 All scripts in `analysis/` must be run **from the project root** (they
 reference `data/` and the Siegler `.txt` files with root-relative paths):
+
+```
+python3 analysis/run_baseline_table.py         # the 4-level decomposition
+python3 analysis/run_threeband_baseline.py     # UHF/S/Ka comparison + figure
+python3 analysis/dielectric_sensitivity.py     # incidence-angle + rock-eps checks
+```
+
 ## References
 
 | Reference | What it provides | Link |
