@@ -1,0 +1,27 @@
+<svg width="680" height="420" viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+<title>Line-of-sight raycasting cross-section</title>
+<desc>Side-view cross-section of terrain showing a transmitter mast casting two sight lines: one to a nearby receiver that clears the terrain, and one to a farther receiver whose straight-line path is blocked by a ridge, illustrating how the algorithm checks whether terrain rises above the direct line between transmitter and receiver.</desc>
+<rect width="680" height="420" fill="#FFFFFF"/>
+
+<line x1="80" y1="227" x2="260" y2="290" stroke="#1D9E75" stroke-width="2" stroke-linecap="round"/>
+<line x1="80" y1="227" x2="560" y2="300" stroke="#D85A30" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 4"/>
+
+<path d="M40,340 L120,335 L200,330 L260,300 L320,250 L380,225 L420,235 L480,290 L560,310 L640,320 L640,380 L40,380 Z" fill="#F1EFE8" stroke="#888780" stroke-width="1"/>
+
+<line x1="80" y1="337.5" x2="80" y2="227" stroke="#2C2C2A" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="80" cy="227" r="4" fill="#2C2C2A"/>
+
+<line x1="260" y1="300" x2="260" y2="290" stroke="#2C2C2A" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="260" cy="290" r="3" fill="#2C2C2A"/>
+
+<line x1="560" y1="310" x2="560" y2="300" stroke="#2C2C2A" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="560" cy="300" r="3" fill="#2C2C2A"/>
+
+<circle cx="308" cy="261" r="4" fill="#D85A30"/>
+<line x1="308" y1="261" x2="460" y2="162" stroke="#888780" stroke-width="0.75" stroke-dasharray="3 3"/>
+
+<text x="80" y="205" text-anchor="middle" font-size="12" fill="#444441">TX, 30 m mast</text>
+<text x="170" y="240" text-anchor="middle" font-size="12" fill="#0F6E56">visible</text>
+<text x="465" y="158" text-anchor="start" font-size="12" fill="#993C1D">Terrain rises above</text>
+<text x="465" y="174" text-anchor="start" font-size="12" fill="#993C1D">the ray here: blocked</text>
+</svg>
