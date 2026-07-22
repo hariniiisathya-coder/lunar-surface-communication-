@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 .idea/
 data/kernels/de440.bsp
+lunarcomms.egg-info/
+notebooks/.ipynb_checkpoints/
+.DS_Store

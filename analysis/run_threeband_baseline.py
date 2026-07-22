@@ -1,20 +1,12 @@
 """
 Three-band terrain-aware coverage comparison: UHF (0.442 GHz), S-band
-(2.5 GHz), Ka-band (27 GHz). Tests the prediction that coverage should
-collapse UHF -> S -> Ka on real terrain, since the Deygout diffraction
-parameter nu scales as sqrt(f): shadows deepen sharply with frequency.
-
-For each band, reports:
-  - Friis-only coverage (reference, no terrain)
-  - Terrain-aware (two-ray + Deygout) coverage
-  - The terrain penalty (Friis minus terrain-aware)
-  - Fraction of NLOS pixels where the Siegler loss-tangent clamp was hit
-    (UHF is below the Siegler 3-37 GHz calibration range; this flags how
-    many cells rely on the ceiling rather than the fitted curve)
-
-Run from the project root:  python run_threeband_baseline.py
+(2.5 GHz), Ka-band (27 GHz) -- WITH a coverage-vs-frequency figure.
 """
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 from lunarcomms.io.pgda import load_dem
 from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile
 from lunarcomms.propagation import two_ray, friis, diffraction
@@ -49,11 +41,9 @@ def run_band(dem, px, tx, freq_hz):
             rx_elev = dem[i, j] + H_RX
             d3d = np.hypot(dh, rx_elev - tx_elev)
 
-            # Friis reference
             pl_f = float(friis.fspl_db(d3d, freq_hz))
             m_f = friis.link_margin_db(friis.received_power_dbm(EIRP, pl_f, GRX), SENS)
 
-            # terrain-aware
             if los[i, j]:
                 pl_t = float(two_ray.path_loss_db(dh, H_TX, H_RX, freq_hz, RHO))
             else:
@@ -61,7 +51,6 @@ def run_band(dem, px, tx, freq_hz):
                 pl_t = pl_f
                 h, dist = extract_profile(dem, tx[0], tx[1], i, j, px)
                 pl_t += float(diffraction.deygout_loss_db(h, dist, H_TX, H_RX, freq_hz))
-                # check whether the baseline loss tangent at this freq is clamped
                 td_raw = float(di.loss_tangent_ab(-3.79, 0.069, freq_hz / 1e9, clamp=False))
                 if td_raw > di.TAN_DELTA_CEILING:
                     clamp_hits += 1
@@ -86,6 +75,7 @@ def main():
     tx = tuple(int(v) for v in np.unravel_index(np.nanargmax(dem), dem.shape))
     print(f"DEM {dem.shape}, TX {tx}, elev {dem[tx]:.1f} m\n")
 
+    results = {}
     print(f"{'Band':6s} {'Freq (GHz)':>10s} {'Breakpoint(m)':>14s} "
           f"{'Friis %':>9s} {'Terrain %':>10s} {'Penalty %':>10s} {'UHF-clamp hit %':>16s}")
     print("-" * 82)
@@ -93,19 +83,41 @@ def main():
         bp = two_ray.breakpoint_distance(H_TX, H_RX, f)
         friis_pct, terrain_pct, clamp_frac = run_band(dem, px, tx, f)
         penalty = friis_pct - terrain_pct
+        results[name] = (f, friis_pct, terrain_pct, penalty)
         print(f"{name:6s} {f/1e9:>10.3f} {bp:>14.1f} {friis_pct:>8.1f}% "
               f"{terrain_pct:>9.1f}% {penalty:>9.1f}% {clamp_frac:>15.1f}%")
 
-    print()
-    print("Interpretation: if coverage collapses UHF -> S -> Ka (terrain %")
-    print("column falling while Friis % stays ~100% at all bands), this")
-    print("confirms the predicted frequency-dependent terrain-blockage effect,")
-    print("consistent with nu ~ sqrt(f) making diffraction shadows deeper at")
-    print("higher frequencies. The UHF-clamp column flags how much of the UHF")
-    print("result relies on the loss-tangent ceiling rather than the fitted")
-    print("Siegler curve, since UHF is below its 3-37 GHz calibration range")
-    print("(this affects the two-ray LOS path loss slightly, not the Deygout")
-    print("diffraction loss itself, which has no dielectric dependence).")
+    order = ["UHF", "S", "Ka"]
+    freqs_ghz = [results[b][0] / 1e9 for b in order]
+    friis_vals = [results[b][1] for b in order]
+    terrain_vals = [results[b][2] for b in order]
+    penalty_vals = [results[b][3] for b in order]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+    ax1.plot(freqs_ghz, friis_vals, "k--", marker="o", label="Friis (no terrain)")
+    ax1.plot(freqs_ghz, terrain_vals, color="#C62828", marker="o", lw=2,
+              label="Terrain-aware (two-ray+Deygout)")
+    ax1.set_xscale("log")
+    ax1.set_xticks(freqs_ghz)
+    ax1.set_xticklabels([f"{b}\n{f:.3g} GHz" for b, f in zip(order, freqs_ghz)])
+    ax1.set_ylabel("Coverage (%)")
+    ax1.set_ylim(0, 105)
+    ax1.set_title("Coverage vs. band")
+    ax1.legend()
+    ax1.grid(alpha=0.3)
+
+    ax2.plot(freqs_ghz, penalty_vals, color="#C62828", marker="o", lw=2)
+    ax2.set_xscale("log")
+    ax2.set_xticks(freqs_ghz)
+    ax2.set_xticklabels([f"{b}\n{f:.3g} GHz" for b, f in zip(order, freqs_ghz)])
+    ax2.set_ylabel("Terrain penalty (%) = Friis % \u2212 Terrain-aware %")
+    ax2.set_title("Terrain-blockage penalty vs. band\n(the predicted collapse)")
+    ax2.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig("threeband_coverage.png", dpi=130, bbox_inches="tight")
+    print("\nwrote threeband_coverage.png")
 
 
 if __name__ == "__main__":
