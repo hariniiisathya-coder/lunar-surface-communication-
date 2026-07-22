@@ -15,7 +15,7 @@
 <line x1="340" y1="76" x2="340" y2="136" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
 
 <rect x="230" y="136" width="220" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
-<text x="340" y="158" text-anchor="middle" font-size="14" font-weight="600" fill="#2C2C2A">Line of sight?</text>
+<text x="340" y="158" text-anchor="middle" font-size="14" font-weight="600" fill="#2C2C2A">Line of sight</text>
 <text x="340" y="178" text-anchor="middle" font-size="12" fill="#444441">Raycast from TX</text>
 
 <path d="M340,192 L340,222 L145,222 L145,252" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
