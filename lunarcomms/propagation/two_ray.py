@@ -113,6 +113,40 @@ def path_loss_spatial_db(
     return _two_ray_pl_from_gamma(distance_m, h_tx_m, h_rx_m, freq_hz, gamma_v)
 
 
+def path_loss_envelope_db(
+    distance_m,
+    h_tx_m: float,
+    h_rx_m: float,
+    freq_hz: float,
+):
+    """Two-ray LOCAL-MEAN (envelope) path loss (dB) -- the dual-slope
+    breakpoint model without the fast interference oscillation.
+
+    path_loss_db() returns the exact coherent direct+reflected sum, whose deep
+    nulls are FAST FADING: on a coverage MAP sampled at the DEM pixel they
+    alias into concentric-ring moire (the null spacing falls below the pixel,
+    especially at high frequency). For coverage/throughput maps use this
+    envelope; keep the exact oscillation for tap/trajectory export
+    (lunarcomms.export.taps), where a moving rover genuinely resolves it.
+
+    Model (dual-slope): free-space (1/d^2) below the crossover, the two-ray
+    far field (1/d^4) beyond it. The two curves cross at d_bp = 4*pi*h_t*h_r/
+    lambda (= pi * the null-spacing breakpoint 4 h_t h_r/lambda); the far-field
+    branch is the standard PL = 40 log10 d - 20 log10(h_t h_r) (G=1), so the
+    two branches are CONTINUOUS at d_bp -- anchoring the far field to FSPL at
+    the null breakpoint instead would leave a 20 log10(pi) ~ 9.9 dB step.
+    """
+    d = np.asarray(distance_m, dtype=float)
+    lam = _C / float(freq_hz)
+    d_bp = 4.0 * np.pi * h_tx_m * h_rx_m / lam
+    r1 = np.sqrt(d ** 2 + (h_tx_m - h_rx_m) ** 2)
+    pl_below = fspl_db(r1, freq_hz)
+    pl_above = 40.0 * np.log10(np.maximum(d, 1e-9)) \
+        - 20.0 * np.log10(h_tx_m * h_rx_m)
+    out = np.where(d <= d_bp, pl_below, pl_above)
+    return float(out) if np.ndim(out) == 0 else out
+
+
 def specular_reflection_point_fraction(h_tx_m: float, h_rx_m: float) -> float:
     """Flat-Earth specular point location as a fraction of d from the TX:
         x_spec / d = h_tx / (h_tx + h_rx).

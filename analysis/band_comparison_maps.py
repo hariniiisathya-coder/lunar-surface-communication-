@@ -37,16 +37,16 @@ from lunarcomms.propagation import diffraction, friis, two_ray
 
 BANDS = {"UHF (0.44 GHz)": 0.442e9, "S (2.5 GHz)": 2.5e9, "Ka (27 GHz)": 27.0e9}
 
-# Fixed link budget across bands (BS downlink).
-EIRP_DBM, GRX_DBI, NF_DB, B_HZ, RHO = 53.0, 2.0, 5.0, 20e6, 1.50
+# Link budget held fixed across bands (only propagation differs).
+NF_DB, B_HZ, RHO = 5.0, 20e6, 1.50
 H_TX, H_RX = 30.0, 2.0
-SE_MAX = 7.4                      # 256QAM ceiling, b/s/Hz
+SE_MAX = 7.4                      # 256QAM ceiling, b/s/Hz (Shannon fallback)
 SNR_MIN_DB = 0.0                 # below this a pixel is "uncovered"
 N0_DBM = -174 + 10 * np.log10(B_HZ) + NF_DB
 
 
-def snr_map_for_band(dem, px, tx_rc, los, freq_hz, stride):
-    """Per-pixel downlink SNR (dB) at one band, given the precomputed LOS mask."""
+def snr_map_for_band(dem, px, tx_rc, los, freq_hz, stride, eirp_dbm, grx_dbi):
+    """Per-pixel SNR (dB) at one band, given the precomputed LOS mask."""
     ny, nx = dem.shape
     tx_elev = dem[tx_rc] + H_TX
     snr = np.full((ny, nx), np.nan)
@@ -61,22 +61,40 @@ def snr_map_for_band(dem, px, tx_rc, los, freq_hz, stride):
                 rx_elev = dem[i, j] + H_RX
                 d3d = float(np.hypot(dh, rx_elev - tx_elev))
                 if los[i, j]:
-                    pl = float(two_ray.path_loss_db(dh, H_TX, H_RX,
-                                                    freq_hz, RHO))
+                    # Envelope (dual-slope), not the exact coherent sum: the
+                    # two-ray nulls are fast fading that aliases into moire on
+                    # a pixel-sampled map. The exact oscillation lives in the
+                    # tap/trajectory export where a rover resolves it.
+                    pl = float(two_ray.path_loss_envelope_db(
+                        dh, H_TX, H_RX, freq_hz))
                 else:
                     pl = float(friis.fspl_db(d3d, freq_hz))
                     h, dist = extract_profile(dem, tx_rc[0], tx_rc[1],
                                               i, j, px)
                     pl += float(diffraction.deygout_loss_db(
                         h, dist, H_TX, H_RX, freq_hz))
-            prx = EIRP_DBM + GRX_DBI - pl
+            prx = eirp_dbm + grx_dbi - pl
             snr[i:i + stride, j:j + stride] = prx - N0_DBM
     snr[np.isnan(dem)] = np.nan
     return snr
 
 
-def throughput_map(snr_db):
-    """Shannon achievable rate (Mbps), 256QAM-capped, 0 below SNR_MIN_DB."""
+def throughput_map(snr_db, amc=None):
+    """Per-pixel achievable throughput (Mbps).
+
+    amc = (snr_grid, tput_grid) from the MEASURED PUSCH link-adaptation curve
+    (matlab/run_amc_curve.m): per-pixel SNR is interpolated onto it, so the
+    map is MCS-accurate rather than an idealised Shannon bound. Below the
+    lowest measured SNR the throughput is 0 (outage); above the top it is
+    clamped to the measured peak (256QAM saturates). If amc is None, falls
+    back to a 256QAM-capped Shannon estimate.
+    """
+    if amc is not None:
+        snr_grid, tput_grid = amc
+        tput = np.interp(snr_db, snr_grid, tput_grid,
+                         left=0.0, right=tput_grid[-1])
+        tput = np.where(np.isnan(snr_db), np.nan, tput)
+        return tput
     se = np.minimum(np.log2(1.0 + 10.0 ** (snr_db / 10.0)), SE_MAX)
     tput = B_HZ * se / 1e6
     tput[snr_db < SNR_MIN_DB] = 0.0
@@ -89,8 +107,33 @@ def main():
     ap.add_argument("--clip-km", type=float, default=1.0)
     ap.add_argument("--tx-frac", type=float, nargs=2, default=(0.5, 0.5))
     ap.add_argument("--stride", type=int, default=3)
+    ap.add_argument("--mode", choices=["bs", "ue"], default="ue",
+                    help="bs: 53 dBm downlink (generous, coverage-limited); "
+                    "ue: 23 dBm uplink (binding, throughput grades spatially).")
+    ap.add_argument("--eirp-dbm", type=float, default=None)
+    ap.add_argument("--grx-dbi", type=float, default=None)
+    ap.add_argument("--amc-csv", default="matlab/amc_throughput_curve.csv",
+                    help="Measured PUSCH link-adaptation curve (SNR_dB, "
+                    "throughput_Mbps) from matlab/run_amc_curve.m. If absent, "
+                    "falls back to a 256QAM-capped Shannon estimate.")
     ap.add_argument("--out", default="figures/band_comparison_maps.png")
     args = ap.parse_args()
+
+    import os
+    amc = None
+    if os.path.exists(args.amc_csv):
+        arr = np.loadtxt(args.amc_csv, delimiter=",")
+        amc = (arr[:, 0], arr[:, 1])
+        print(f"using measured AMC curve {args.amc_csv} "
+              f"(peak {arr[:,1].max():.0f} Mbps)")
+    else:
+        print(f"AMC curve {args.amc_csv} not found -> Shannon fallback")
+
+    eirp = args.eirp_dbm if args.eirp_dbm is not None else (
+        53.0 if args.mode == "bs" else 23.0)
+    grx = args.grx_dbi if args.grx_dbi is not None else (
+        2.0 if args.mode == "bs" else 12.0)
+    direction = "BS 53 dBm downlink" if args.mode == "bs" else "UE 23 dBm uplink"
 
     dem, transform, _ = load_dem(args.dem, clip_extent_km=args.clip_km)
     px = abs(transform.a)
@@ -106,8 +149,8 @@ def main():
 
     tputs, stats = {}, {}
     for name, f in BANDS.items():
-        snr = snr_map_for_band(dem, px, tx_rc, los, f, args.stride)
-        tp = throughput_map(snr)
+        snr = snr_map_for_band(dem, px, tx_rc, los, f, args.stride, eirp, grx)
+        tp = throughput_map(snr, amc)
         tputs[name] = tp
         computed = np.isfinite(snr)
         cov = 100.0 * np.mean(snr[computed] >= SNR_MIN_DB)
@@ -139,9 +182,10 @@ def main():
         ax.set_xlabel("east (km)")
     axes[0].set_ylabel("south (km)")
     cb = fig.colorbar(im, ax=axes, shrink=0.82, pad=0.02)
-    cb.set_label("achievable throughput (Mbps, 20 MHz, 256QAM cap)")
+    rate_src = "measured PUSCH AMC" if amc is not None else "256QAM Shannon"
+    cb.set_label(f"achievable throughput (Mbps, {rate_src})")
     fig.suptitle(f"Per-band coverage over real terrain (Site04, "
-                 f"{shadowed:.0f}% shadowed) — fixed link budget",
+                 f"{shadowed:.0f}% shadowed) — {direction}, {rate_src} rate",
                  fontsize=12)
     fig.savefig(args.out, dpi=160, bbox_inches="tight")
     print(f"saved {args.out}")
