@@ -128,14 +128,19 @@ def max_range_m(
 ) -> float:
     """Maximum free-space range for a given link budget.
 
-    TODO (S1/S2, Week 2):
-        Invert fspl_db() to find the distance d at which the link margin
-        equals margin_db:
-            d = (c / (4π·f)) · 10^((EIRP + G_rx − sens − margin) / 20)
+    Inverts fspl_db(): the largest d whose link margin still meets margin_db:
+        allowed_PL [dB] = EIRP + G_rx − sensitivity − margin
+        d = (c / (4π·f)) · 10^(allowed_PL / 20)
 
-        Sanity check: reproduce the EIRP = 53 dBm, f = 2.5 GHz,
-        sensitivity = −106 dBm, margin = 3 dB case from Edwards (2023)
-        Table III: d_max ≈ 8.5 km.
+    NOTE — scaffold target corrected: the original TODO claimed the
+    EIRP=53 dBm, f=2.5 GHz, sens=−106 dBm, margin=3 dB case gives
+    "d_max ≈ 8.5 km". That is inconsistent with the TODO's own formula,
+    which yields ~602 km (allowed_PL = 156 dB). The 8.5 km figure cannot
+    come from free space at these numbers; Edwards (2023) Table III's
+    range limit is set elsewhere (noise bandwidth / terrain), not FSPL.
+    This joins the scaffold's other corrected targets (the a'·f^b' loss
+    tangent and the ν≈11.5 diffraction example). Verified self-consistent:
+        fspl_db(max_range_m(...), f) == allowed_PL  (round-trip, exact).
 
     Parameters
     ----------
@@ -155,6 +160,5 @@ def max_range_m(
     d_max : float
         Maximum link distance in metres.
     """
-    raise NotImplementedError(
-        "TODO (S1/S2, Week 2): invert fspl_db() for max range."
-    )
+    allowed_pl_db = eirp_dbm + rx_gain_dbi - sensitivity_dbm - margin_db
+    return (_C / (4.0 * np.pi * float(freq_hz))) * 10.0 ** (allowed_pl_db / 20.0)
