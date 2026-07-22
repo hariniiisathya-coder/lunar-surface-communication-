@@ -40,28 +40,26 @@ def compute_horizon_angles(
     dem: np.ndarray,
     pixel_size_m: float,
     n_azimuths: int = 360,
+    max_radius_m: float | None = None,
+    observer_height_m: float = 0.0,
 ) -> np.ndarray:
     """Compute horizon elevation angle in each azimuth direction for every DEM pixel.
 
-    TODO (S1, Week 4):
-        Algorithm (Mazarico 2011):
-        1. For each pixel (i, j) and each azimuth direction φ:
-           a. Cast a ray from (i, j) in direction φ.
-           b. Sample the DEM along the ray at each pixel crossing.
-           c. The horizon angle at φ is:
-                  θ_horizon(φ) = max over all sampled pixels k of:
-                      arctan((h[k] − h[i,j]) / r[k])
-              where r[k] is the horizontal distance to pixel k.
-           d. The point is in LOS for a source at azimuth φ if:
-                  θ_source < θ_horizon(φ).
+    Algorithm (Mazarico et al. 2011, doi:10.1016/j.icarus.2010.10.030):
+    for each azimuth φ, march outward in steps of one pixel and track, per
+    pixel, the running maximum of arctan((h[k] − h_obs) / r[k]). Vectorised
+    over the whole grid: each radial step is ONE map_coordinates call sampling
+    the entire DEM shifted by (k·sinφ, k·cosφ), so the cost is
+    n_azimuths × n_steps grid interpolations, not a per-pixel Python loop.
 
-        Implementation tip: use np.linspace to step along rays; interpolate
-        DEM heights at non-integer positions with scipy.ndimage.map_coordinates.
+    Rays leaving the DEM sample the edge value (mode="nearest"), which makes
+    the horizon flat beyond the tile — fine for interior pixels, conservative
+    near the border.
 
-        Validation:
-            Run on the PGDA-78 5-m DEM of the south pole.
-            Extract horizon at Connecting Ridge (~89.5°S, 222°E).
-            Should match Mazarico (2011) Fig. 5 horizon profile within ±1°.
+    Memory note: the (ny, nx, n_azimuths) float64 output is ~2.9 GB for a
+    1000×1000 tile at 360 azimuths. For coverage work on large DEMs prefer
+    los_mask_from_tx (single-Tx) or call this on a cropped tile / reduced
+    n_azimuths.
 
     Parameters
     ----------
@@ -71,16 +69,45 @@ def compute_horizon_angles(
         Ground sampling distance in metres (5 for PGDA-78).
     n_azimuths : int
         Number of azimuth directions to sample (default 360 → 1° resolution).
+    max_radius_m : float, optional
+        Maximum ray length. Default: the DEM diagonal (every pixel sees the
+        full tile).
+    observer_height_m : float
+        Observer antenna height above the local terrain (default 0 = eye at
+        the surface, the Mazarico convention).
 
     Returns
     -------
     horizon_angles : ndarray, shape (ny, nx, n_azimuths)
         Horizon elevation angle in degrees for each pixel and azimuth.
+        Negative values mean the horizon is below the local horizontal
+        (looking down off a ridge).
     """
-    raise NotImplementedError(
-        "TODO (S1, Week 4): implement vectorised horizon raycasting. "
-        "See Mazarico et al. (2011), doi:10.1016/j.icarus.2010.10.030"
-    )
+    ny, nx = dem.shape
+    if max_radius_m is None:
+        max_radius_m = float(np.hypot(ny, nx)) * pixel_size_m
+    n_steps = max(int(max_radius_m / pixel_size_m), 1)
+
+    rows0, cols0 = np.mgrid[0:ny, 0:nx]
+    h_obs = dem + observer_height_m
+
+    azimuths = np.linspace(0.0, 2.0 * np.pi, n_azimuths, endpoint=False)
+    out = np.full((ny, nx, n_azimuths), -90.0, dtype=float)
+
+    for a_idx, phi in enumerate(azimuths):
+        # Azimuth convention: 0 = grid north (-row), 90° = grid east (+col).
+        drow = -np.cos(phi)
+        dcol = np.sin(phi)
+        best = np.full((ny, nx), -np.inf)
+        for k in range(1, n_steps + 1):
+            r_m = k * pixel_size_m
+            rows = rows0 + k * drow
+            cols = cols0 + k * dcol
+            hk = map_coordinates(dem, [rows.ravel(), cols.ravel()],
+                                 order=1, mode="nearest").reshape(ny, nx)
+            np.maximum(best, np.arctan2(hk - h_obs, r_m), out=best)
+        out[:, :, a_idx] = np.degrees(best)
+    return out
 
 
 def los_mask_from_tx(
