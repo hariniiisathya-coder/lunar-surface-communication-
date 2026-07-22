@@ -60,19 +60,109 @@ prior published lunar coverage model (e.g. Edwards et al., 2023) captures.
   against its Table 1 fit constants.
 
 ## Repository structure
+
+```
+lunar-comms-survey/
+├── lunarcomms/                  # installable Python package
+│   ├── regolith/
+│   │   └── dielectric.py        # Olhoeft+Strangway 1975 permittivity;
+│   │                             # Siegler 2020 spatially-variable loss tangent
+│   ├── propagation/
+│   │   ├── friis.py             # free-space path loss
+│   │   ├── two_ray.py           # two-ray ground reflection, real & spatial Fresnel
+│   │   └── diffraction.py       # ITU-R P.526-15 knife-edge + Deygout multi-edge
+│   ├── coverage/
+│   │   └── link_budget.py       # combines LOS + two-ray + Deygout into a
+│   │                             # link-margin map; exports GeoTIFF
+│   ├── io/
+│   │   └── pgda.py              # PGDA DEM reader; Siegler a'/b' map sampler
+│   └── geometry/
+│       └── horizon.py           # line-of-sight raycasting from a fixed TX,
+│                                 # terrain profile extraction (this track's own)
+│                                 # (frames.py: shared Earth-Moon geometry
+│                                 #  utility inherited from the project scaffold)
+│
+├── build_dielectric.py          # generator: writes regolith/dielectric.py
+├── build_pgda.py                # generator: writes io/pgda.py
+│                                 # (edit these, not the generated modules —
+│                                 #  re-running a generator overwrites its output)
+│
+├── analysis/                    # investigation & validation scripts (not
+│   │                             # part of the installable package)
+│   ├── run_baseline_table.py        # 4-level fidelity comparison
+│   ├── run_baseline_3level.py       # 3-level fallback (no Siegler files needed)
+│   ├── run_threeband_baseline.py    # UHF/S/Ka terrain-aware comparison + figure
+│   ├── dielectric_sensitivity.py    # incidence-angle + forced-permittivity checks
+│   ├── dielectric_sensitivity_v2.py # per-pixel margin sensitivity diagnostic
+│   ├── link_budget_stress_test.py   # coverage-% sensitivity vs EIRP sweep
+│   ├── dielectric_by_band.py        # S-vs-Ka dielectric prediction test
+│   ├── dielectric_by_band_recheck.py# same, at 10x finer EIRP resolution
+│   ├── margin_sensitivity_by_band.py# per-pixel margin sensitivity, S vs Ka
+│   ├── coverage_delta_evidence.py   # standalone repro of the S-vs-Ka result
+│   ├── nu_frequency_scaling_evidence.py # verifies nu ~ sqrt(f) against theory
+│   ├── coverage_vs_eirp.py          # coverage-vs-EIRP curves (LOS-only)
+│   ├── coverage_vs_eirp_terrain.py  # coverage-vs-EIRP, full terrain-aware
+│   ├── coverage_vs_eirp_zoom.py     # zoomed sign-flip visualisation
+│   └── visualize_baseline.py        # 6-panel DEM + 4-level coverage figure
+│
+├── figures/                      # generated outputs (coverage maps, plots)
+│
+├── tests/
+│   ├── test_regolith.py         # 23 tests, anchored to Siegler Table 1/Fig.8
+│   │                             # and the Olhoeft & Strangway relation
+│   ├── test_propagation.py      # 19 tests, anchored to ITU-R P.526-15,
+│   │                             # Rappaport (1996), and analytic FSPL
+│   └── test_geometry.py         # line-of-sight raycasting tests (this
+│                                 # track's own) + shared Earth-Moon tests
+│
+├── data/
+│   ├── dem/Site01/               # PGDA-78 DEM, Connecting Ridge (5 m/pixel)
+│   ├── dem/Site04/                # PGDA-78 DEM, Shackleton rim
+│   ├── kernels/                   # SPICE kernels (de440.bsp not tracked —
+│   │                               # see data/download_kernels.py)
+│   └── Figure 11_Constant Loss Parameter_a'.txt   # Siegler (2020) maps
+│       Figure 11_Frequency Exponent_b'.txt
+│
+├── pyproject.toml, environment.yml, .gitignore, LICENSE
+```
+
 ## Install
+
+```
+git clone https://github.com/hariniiisathya-coder/lunar-surface-communication-.git
+cd lunar-surface-communication-
+pip install -e ".[dev]"
+```
+
 or with conda:
+
+```
+conda env create -f environment.yml
+conda activate lunarcomms
+pip install -e ".[dev]"
+```
+
 ## Data setup
 
 DEMs for Site01 and Site04 are included in `data/dem/`. The SPICE ephemeris
 kernel (`de440.bsp`, ~114 MB) is not tracked in git (exceeds GitHub's file
 size limit) — download it from NAIF:
+
+```
+python data/download_kernels.py
+```
+
 The Siegler (2020) loss-tangent maps are Zenodo record
 [10.5281/zenodo.3993798](https://doi.org/10.5281/zenodo.3993798) — place
 `Figure 11_Constant Loss Parameter_a'.txt` and
 `Figure 11_Frequency Exponent_b'.txt` in the project root.
 
 ## Run tests
+
+```
+pytest tests/ -v
+```
+
 42 tests in `test_regolith.py` + `test_propagation.py` pass, every expected
 value anchored to a named primary source (not to hand-computed or assumed
 values). `test_geometry.py`'s line-of-sight tests are this track's own; its
@@ -108,6 +198,13 @@ tan_d = loss_tangent_ab(a, b, freq_ghz=2.5)
 
 All scripts in `analysis/` must be run **from the project root** (they
 reference `data/` and the Siegler `.txt` files with root-relative paths):
+
+```
+python3 analysis/run_baseline_table.py         # the 4-level decomposition
+python3 analysis/run_threeband_baseline.py     # UHF/S/Ka comparison + figure
+python3 analysis/dielectric_sensitivity.py     # incidence-angle + rock-eps checks
+```
+
 ## References
 
 | Reference | What it provides | Link |
