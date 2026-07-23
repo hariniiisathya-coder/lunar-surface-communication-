@@ -28,6 +28,22 @@ from lunarcomms.coverage.link_budget import compute_coverage_map  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEM_PATH = os.environ.get("LUNAR_DEM")
 CLIP_KM = float(os.environ.get("LUNAR_CLIP_KM", "10"))
+MAX_PX = int(os.environ.get("LUNAR_MAXPX", "140"))  # coarsen target per side
+
+
+def _coarsen(dem, px):
+    """Block-mean downsample so the coverage double-loop is tractable. The
+    coverage physics is terrain-shadow dominated at tens-of-metres scale, so
+    coarsening 5 m -> ~Nm keeps the horizon structure while cutting cost."""
+    n = max(dem.shape)
+    stride = max(int(np.ceil(n / MAX_PX)), 1)
+    if stride == 1:
+        return dem, px
+    ny, nx = dem.shape
+    dem = dem[: ny // stride * stride, : nx // stride * stride]
+    dem = dem.reshape(dem.shape[0] // stride, stride,
+                      dem.shape[1] // stride, stride).mean(axis=(1, 3))
+    return dem, px * stride
 
 
 def load_dem():
@@ -36,8 +52,9 @@ def load_dem():
         dem, transform, crs = _ld(DEM_PATH, clip_extent_km=CLIP_KM)
         dem = np.nan_to_num(dem, nan=float(np.nanmin(dem)))
         px = abs(transform[0]) if transform is not None else 5.0
+        dem, px = _coarsen(dem, px)
         name = os.path.basename(DEM_PATH)
-        return dem, (px, 0, 0, 0, -px, 0), f"PGDA LOLA 5 m/px ({name})"
+        return dem, (px, 0, 0, 0, -px, 0), f"PGDA LOLA 5m->{px:.0f}m ({name})"
     # labeled synthetic fallback (NOT for publication figures)
     n, px = 120, 40.0
     yy, xx = np.mgrid[0:n, 0:n].astype(float)
@@ -80,7 +97,8 @@ def main():
     fig.colorbar(im, ax=ax, shrink=0.8, label="link margin (dB)")
     fig.suptitle(f"Per-band coverage (envelope, spherical Moon) — DEM: {label}",
                  fontsize=12)
-    out = os.path.join(HERE, "coverage_pgda.png")
+    stem = os.path.splitext(os.path.basename(DEM_PATH))[0] if DEM_PATH else "synthetic"
+    out = os.path.join(HERE, f"coverage_{stem}.png")
     fig.savefig(out, dpi=120)
     print(f"wrote {out}\nDEM: {label}  shape={dem.shape}  TX={tx}")
 

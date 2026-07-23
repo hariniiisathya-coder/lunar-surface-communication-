@@ -13,3 +13,4 @@ examples/*.mat
 examples/*.png
 
 .venv/
+data/
