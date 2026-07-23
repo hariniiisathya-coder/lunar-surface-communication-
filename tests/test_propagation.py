@@ -11,7 +11,8 @@ References validated here
 [P525] ITU-R P.525-4 (2019). Free-space attenuation.
 [P526] ITU-R P.526-15 (2019). Propagation by diffraction.
 [R96]  Rappaport (1996), Wireless Communications, Ch. 3. ISBN 0-13-375536-3.
-[T22]  Toonen et al. (2022), IEEE J. Radio Freq. Identif., vol. 6. doi:10.1109/JRFID.2022.3159775
+[T22]  Toonen et al. (2022), IEEE J. Radio Freq. Identif., vol. 6.
+       doi:10.1109/JRFID.2022.3159775
 [E23]  Edwards et al. (2023), NTRS 20220015268.
 """
 
@@ -47,7 +48,7 @@ class TestFriis:
         pl1 = friis.fspl_db(1000, 2.5e9)
         pl2 = friis.fspl_db(2000, 2.5e9)
         assert abs((pl2 - pl1) - 6.02) < 0.01, (
-            "FSPL must increase by exactly 20*log10(2) ≈ 6.02 dB when doubling distance."
+            "FSPL must increase by 20*log10(2) ~= 6.02 dB when distance doubles."
         )
 
     def test_array_input(self):

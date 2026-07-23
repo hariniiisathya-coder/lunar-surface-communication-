@@ -5,11 +5,10 @@ Per Rx pixel: LOS (horizon.los_mask_from_tx) -> two_ray.path_loss_db;
 NLOS -> friis.fspl_db(3-D dist) + diffraction.deygout_loss_db(profile from
 horizon.extract_profile). margin = received_power_dbm - sensitivity.
 """
-from pathlib import Path
 import numpy as np
 
-from ..geometry.horizon import los_mask_from_tx, extract_profile
-from ..propagation import two_ray, friis, diffraction
+from ..geometry.horizon import extract_profile, los_mask_from_tx
+from ..propagation import diffraction, friis, two_ray
 
 
 def compute_coverage_map(dem, dem_transform, dem_crs, tx_row, tx_col,
