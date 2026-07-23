@@ -50,7 +50,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..geometry.horizon import extract_profile
+from ..geometry.horizon import R_MOON_M, curvature_drop_m, extract_profile
 from ..propagation.diffraction import (
     deygout_loss_db,
     fresnel_kirchhoff_parameter,
@@ -140,6 +140,8 @@ def link_taps(
     sigma_h_m: float = 0.0,
     roughness_model: str = "ament",
     pol: str = "v",
+    curvature: bool = True,
+    planet_radius_m: float = R_MOON_M,
 ) -> LinkTaps:
     """Compute the sparse tap set for one Tx->Rx link over the DEM.
 
@@ -177,11 +179,17 @@ def link_taps(
     # 3-D direct distance and LOS test (same clearance rule as
     # horizon.los_mask_from_tx).
     d3d = float(np.hypot(d_ground, rx_e - tx_e))
+    # Spherical-Moon bulge added to the profile so LOS/diffraction see the
+    # curved surface (flat-Earth falsely reports LOS past the ~10 km horizon).
+    heights_eff = heights.copy()
+    if curvature and d_ground > 0:
+        heights_eff = heights_eff + curvature_drop_m(dist, d_ground,
+                                                     planet_radius_m)
     if d_ground <= 0 or len(heights) < 3:
         los = True
     else:
         ray = tx_e + (rx_e - tx_e) * (dist / d_ground)
-        los = bool(np.all(ray[1:-1] - heights[1:-1] >= 0))
+        los = bool(np.all(ray[1:-1] - heights_eff[1:-1] >= 0))
 
     lam = _C / float(freq_hz)
     k = 2.0 * np.pi / lam
@@ -225,12 +233,12 @@ def link_taps(
         )
 
     # NLOS: Deygout total loss + excess delay of the dominant edge.
-    loss_db = float(deygout_loss_db(heights, dist, h_tx_m, h_rx_m,
+    loss_db = float(deygout_loss_db(heights_eff, dist, h_tx_m, h_rx_m,
                                     freq_hz, max_edges=max_edges))
     # Dominant edge geometry (same construction as deygout_loss_db's
     # top-level pass): height above the Tx-Rx line, max-nu point.
     los_line = tx_e + (rx_e - tx_e) * (dist / d_ground)
-    hsub = np.asarray(heights, dtype=float) - los_line
+    hsub = np.asarray(heights_eff, dtype=float) - los_line
     d1_all = np.asarray(dist, dtype=float)
     d2_all = d_ground - d1_all
     interior = slice(1, len(dist) - 1)

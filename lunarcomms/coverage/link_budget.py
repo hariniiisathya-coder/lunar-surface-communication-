@@ -7,7 +7,12 @@ horizon.extract_profile). margin = received_power_dbm - sensitivity.
 """
 import numpy as np
 
-from ..geometry.horizon import extract_profile, los_mask_from_tx
+from ..geometry.horizon import (
+    R_MOON_M,
+    curvature_drop_m,
+    extract_profile,
+    los_mask_from_tx,
+)
 from ..propagation import diffraction, friis, two_ray
 
 
@@ -16,7 +21,8 @@ def compute_coverage_map(dem, dem_transform, dem_crs, tx_row, tx_col,
                          sensitivity_dbm, rho=1.50, use_diffraction=True,
                          tx_pattern=None, rx_pattern=None,
                          sigma_h_m=0.0, roughness_model="ament", pol="v",
-                         use_envelope=False):
+                         use_envelope=False,
+                         curvature=True, planet_radius_m=R_MOON_M):
     """Link-margin map (dB) for a single BTS location. NaN where unreachable.
 
     tx_pattern, rx_pattern : optional lunarcomms.antenna.Pattern for the LOS
@@ -40,7 +46,8 @@ def compute_coverage_map(dem, dem_transform, dem_crs, tx_row, tx_col,
     px = abs(dem_transform[0]) if dem_transform is not None else 5.0
     margin = np.full((ny, nx), np.nan, dtype=float)
 
-    los = los_mask_from_tx(dem, px, tx_row, tx_col, h_tx_m, h_rx_m)
+    los = los_mask_from_tx(dem, px, tx_row, tx_col, h_tx_m, h_rx_m,
+                           curvature=curvature, planet_radius_m=planet_radius_m)
     tx_elev = dem[tx_row, tx_col] + h_tx_m
     plain_los = (tx_pattern is None and rx_pattern is None
                  and not sigma_h_m and use_envelope)
@@ -69,6 +76,8 @@ def compute_coverage_map(dem, dem_transform, dem_crs, tx_row, tx_col,
                 pl = float(friis.fspl_db(d3d, freq_hz))
                 if use_diffraction:
                     h, dist = extract_profile(dem, tx_row, tx_col, i, j, px)
+                    if curvature and dist[-1] > 0:
+                        h = h + curvature_drop_m(dist, dist[-1], planet_radius_m)
                     pl += float(diffraction.deygout_loss_db(
                         h, dist, h_tx_m, h_rx_m, freq_hz))
             prx = friis.received_power_dbm(eirp_dbm, pl, rx_gain_dbi)

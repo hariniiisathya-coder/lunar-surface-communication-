@@ -132,6 +132,24 @@ class TestHorizonMask:
             "Check that your horizon angle computation is correct."
         )
 
+    def test_curvature_blocks_beyond_horizon(self):
+        """A same-elevation point past the ~10 km mast horizon is NOT in LOS
+        once the spherical-Moon bulge is included, but IS under flat-Earth.
+
+        Flat 30 km DEM at 300 m/px; Tx 30 m mast at the left edge, targets at
+        the same elevation along the row. Horizon for a 30 m mast on the Moon
+        is sqrt(2 R h) ~ 10.2 km; the far edge (~30 km) must be blocked.
+        """
+        flat = np.zeros((3, 101), dtype=float)
+        kw = dict(pixel_size_m=300.0, tx_row=1, tx_col=0, h_tx_m=30.0, h_rx_m=2.0)
+        sphere = horizon.los_mask_from_tx(flat, curvature=True, **kw)
+        flatE = horizon.los_mask_from_tx(flat, curvature=False, **kw)
+        # far edge ~30 km: blocked on the sphere, visible on flat Earth
+        assert not sphere[1, -1]
+        assert flatE[1, -1]
+        # curvature strictly reduces (or equals) coverage
+        assert sphere.mean() < flatE.mean()
+
     def test_tx_always_sees_itself(self):
         """The Tx pixel should always be 'in LOS' with itself."""
         dem = np.zeros((51, 51), dtype=float)

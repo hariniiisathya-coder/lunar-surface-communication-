@@ -35,6 +35,24 @@ Public DEM product:
 import numpy as np
 from scipy.ndimage import map_coordinates
 
+#: Mean lunar radius (m), MOON_ME / DE440 (IAU 2015).
+R_MOON_M = 1_737_400.0
+
+
+def curvature_drop_m(dist_from_tx_m, total_m, planet_radius_m=R_MOON_M):
+    """Height a point on the sphere sits below the flat Tx-Rx chord (m).
+
+        b(d1) = d1 * d2 / (2 R),   d2 = total - d1
+
+    Zero at both endpoints, maximal at the midpoint. Adding b to the terrain
+    profile (equivalently subtracting from clearance) turns the flat-Earth LOS
+    test into a spherical-Moon one. At 20 km, b_max ~ 115 m -- larger than a
+    30 m mast, so ignoring it falsely reports LOS beyond the ~10 km horizon.
+    """
+    d1 = np.asarray(dist_from_tx_m, dtype=float)
+    d2 = np.asarray(total_m, dtype=float) - d1
+    return d1 * d2 / (2.0 * float(planet_radius_m))
+
 
 def compute_horizon_angles(
     dem: np.ndarray,
@@ -42,6 +60,8 @@ def compute_horizon_angles(
     n_azimuths: int = 360,
     max_radius_m: float | None = None,
     observer_height_m: float = 0.0,
+    curvature: bool = True,
+    planet_radius_m: float = R_MOON_M,
 ) -> np.ndarray:
     """Compute horizon elevation angle in each azimuth direction for every DEM pixel.
 
@@ -105,7 +125,10 @@ def compute_horizon_angles(
             cols = cols0 + k * dcol
             hk = map_coordinates(dem, [rows.ravel(), cols.ravel()],
                                  order=1, mode="nearest").reshape(ny, nx)
-            np.maximum(best, np.arctan2(hk - h_obs, r_m), out=best)
+            dh = hk - h_obs
+            if curvature:
+                dh = dh - r_m ** 2 / (2.0 * planet_radius_m)  # sphere drop
+            np.maximum(best, np.arctan2(dh, r_m), out=best)
         out[:, :, a_idx] = np.degrees(best)
     return out
 
@@ -117,8 +140,15 @@ def los_mask_from_tx(
     tx_col: int,
     h_tx_m: float,
     h_rx_m: float,
+    curvature: bool = True,
+    planet_radius_m: float = R_MOON_M,
 ) -> np.ndarray:
     """Boolean LOS mask: True where the transmitter can see each DEM pixel.
+
+    curvature : if True (default), add the spherical-Moon bulge
+        d1*d2/(2 R_moon) to the terrain before the clearance test, so points
+        beyond the ~10 km horizon of a 30 m mast are correctly NOT in LOS.
+        Set False for the legacy flat-Earth behaviour.
 
     TODO (S1, Week 4):
         For a Tx at (tx_row, tx_col) with antenna height h_tx_m above terrain:
@@ -173,7 +203,10 @@ def los_mask_from_tx(
                 mask[i, j] = True
                 continue
             ray = tx_h + (rx_h - tx_h) * (dist / total)
-            clearance = ray[1:-1] - heights[1:-1]
+            terrain = heights.copy()
+            if curvature:
+                terrain = terrain + curvature_drop_m(dist, total, planet_radius_m)
+            clearance = ray[1:-1] - terrain[1:-1]
             mask[i, j] = bool(np.all(clearance >= 0))
     return mask
 
