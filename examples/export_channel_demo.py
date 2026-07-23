@@ -34,6 +34,7 @@ taps.save_nrtdl_mat(links, OUT, collapse_below_s=taps.MCHEM_TAP_RESOLUTION_S)
 # Append the Python two_ray reference PL per waypoint so MATLAB can do a
 # quantitative loop-closure comparison (not just "does it load").
 from scipy.io import loadmat, savemat  # noqa: E402
+
 ref_pl = np.array([[float(two_ray.path_loss_db(lk.meta["d_ground_m"],
                                                H_TX, H_RX, F))] for lk in links])
 mat = loadmat(OUT)

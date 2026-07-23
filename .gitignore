@@ -11,3 +11,5 @@ notebooks/.ipynb_checkpoints/
 # generated example artifacts
 examples/*.mat
 examples/*.png
+
+.venv/
