@@ -4,6 +4,13 @@ Spatial link budget: coverage maps as GeoTIFF. Student 1 (S1) -- Week 5-6.
 Per Rx pixel: LOS (horizon.los_mask_from_tx) -> two_ray.path_loss_db;
 NLOS -> friis.fspl_db(3-D dist) + diffraction.deygout_loss_db(profile from
 horizon.extract_profile). margin = received_power_dbm - sensitivity.
+
+Shadow fading: this model uses DETERMINISTIC terrain shadowing (the real-DEM
+LOS mask plus Deygout diffraction) in place of the 3GPP TR 38.901 stochastic
+log-normal shadow-fading term. On the airless Moon with a metre-scale DEM the
+blockage is deterministic and site-specific, so we compute it rather than draw
+it from a distribution -- state this explicitly when mapping onto the 38.901
+correction table. Atmospheric attenuation is identically 0 dB (no atmosphere).
 """
 import numpy as np
 

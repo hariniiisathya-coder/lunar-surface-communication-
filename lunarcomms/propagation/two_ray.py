@@ -14,7 +14,7 @@ import numpy as np
 from ..regolith.dielectric import fresnel_coefficients, fresnel_coefficients_ab
 from .friis import fspl_db
 
-_C = 2.998e8  # m/s   (kept as in the scaffold for target consistency)
+_C = 299792458.0  # m/s (CODATA; unified with friis/diffraction/roughness/taps)
 
 
 def _reflected_ray_weight(distance_m, h_tx_m, h_rx_m, tx_pattern, rx_pattern):
