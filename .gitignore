@@ -14,3 +14,4 @@ examples/*.png
 
 .venv/
 data/
+examples/*.csv
