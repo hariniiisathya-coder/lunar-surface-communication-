@@ -7,3 +7,11 @@ data/kernels/de440.bsp
 lunarcomms.egg-info/
 notebooks/.ipynb_checkpoints/
 .DS_Store
+
+# generated example artifacts
+examples/*.mat
+examples/*.png
+
+.venv/
+data/
+examples/*.csv

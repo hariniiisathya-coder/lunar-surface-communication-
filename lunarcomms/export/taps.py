@@ -50,7 +50,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..geometry.horizon import extract_profile
+from ..geometry.horizon import R_MOON_M, curvature_drop_m, extract_profile
 from ..propagation.diffraction import (
     deygout_loss_db,
     fresnel_kirchhoff_parameter,
@@ -135,12 +135,40 @@ def link_taps(
     freq_hz: float,
     rho: float = 1.50,
     max_edges: int = 3,
+    tx_pattern=None,
+    rx_pattern=None,
+    sigma_h_m: float = 0.0,
+    roughness_model: str = "ament",
+    pol: str = "v",
+    curvature: bool = True,
+    planet_radius_m: float = R_MOON_M,
 ) -> LinkTaps:
     """Compute the sparse tap set for one Tx->Rx link over the DEM.
 
     Uses the same profile extraction, LOS test, Fresnel reflection and
     Deygout diffraction as the coverage pipeline, so the taps are exactly the
     channel the coverage maps already assume — just resolved in delay.
+
+    tx_pattern, rx_pattern : optional lunarcomms.antenna.Pattern instances.
+        When supplied, the ground-reflected LOS tap is weighted by the antenna
+        field gain at its (steeper, downward) elevation relative to the direct
+        ray -- the collapsed tap then automatically carries the pattern-shaped
+        interference. Default (None) == isotropic == unchanged, so the
+        collapsed-tap <-> two_ray.path_loss_db consistency check still holds.
+        The NLOS/Deygout tap is also weighted: the diffracted ray launches
+        toward the dominant edge (elevation from the edge geometry), so a
+        downtilted or directional mast that under- or over-illuminates a
+        crater rim changes NLOS coverage too.
+
+    pol : reflection polarization, "v" (vertical, default) or "h" (horizontal),
+        forwarded to the Fresnel coefficient. Only affects LOS reflection; near
+        grazing both -> -1. Default "v" keeps the consistency check exact.
+
+    sigma_h_m : RMS surface height (m) for the roughness reduction of the
+        coherent ground reflection (roughness.specular_factor). Default 0 =
+        smooth = unchanged. At high band the reflected tap decoheres and the
+        collapsed tap approaches the direct ray (0 dB) -- the specular->diffuse
+        transition, per band.
     """
     heights, dist = extract_profile(dem, tx_row, tx_col, rx_row, rx_col,
                                     pixel_size_m)
@@ -151,11 +179,17 @@ def link_taps(
     # 3-D direct distance and LOS test (same clearance rule as
     # horizon.los_mask_from_tx).
     d3d = float(np.hypot(d_ground, rx_e - tx_e))
+    # Spherical-Moon bulge added to the profile so LOS/diffraction see the
+    # curved surface (flat-Earth falsely reports LOS past the ~10 km horizon).
+    heights_eff = heights.copy()
+    if curvature and d_ground > 0:
+        heights_eff = heights_eff + curvature_drop_m(dist, d_ground,
+                                                     planet_radius_m)
     if d_ground <= 0 or len(heights) < 3:
         los = True
     else:
         ray = tx_e + (rx_e - tx_e) * (dist / d_ground)
-        los = bool(np.all(ray[1:-1] - heights[1:-1] >= 0))
+        los = bool(np.all(ray[1:-1] - heights_eff[1:-1] >= 0))
 
     lam = _C / float(freq_hz)
     k = 2.0 * np.pi / lam
@@ -178,8 +212,18 @@ def link_taps(
         r2 = float(np.hypot(d_ground, h_tx_m + h_rx_m))
         dr = r2 - r1
         theta = float(np.arctan2(h_tx_m + h_rx_m, d_ground))  # grazing angle
-        gamma_v, _ = fresnel_coefficients(rho, float(freq_hz) / 1e9, theta)
-        g_refl = complex(gamma_v) * (r1 / r2) * np.exp(-1j * k * dr)
+        gv, gh = fresnel_coefficients(rho, float(freq_hz) / 1e9, theta)
+        gamma = gv if str(pol).lower().startswith("v") else gh
+        if sigma_h_m:
+            from ..propagation.roughness import specular_factor
+            gamma = gamma * specular_factor(sigma_h_m, freq_hz, theta,
+                                            model=roughness_model)
+        w = 1.0
+        if tx_pattern is not None or rx_pattern is not None:
+            from ..antenna.geometry import reflected_ray_weight
+            w = float(reflected_ray_weight(d_ground, h_tx_m, h_rx_m,
+                                           tx_pattern, rx_pattern))
+        g_refl = w * complex(gamma) * (r1 / r2) * np.exp(-1j * k * dr)
         return LinkTaps(
             delays_s=np.array([0.0, dr / _C]),
             gains=np.array([1.0 + 0.0j, g_refl]),
@@ -189,12 +233,12 @@ def link_taps(
         )
 
     # NLOS: Deygout total loss + excess delay of the dominant edge.
-    loss_db = float(deygout_loss_db(heights, dist, h_tx_m, h_rx_m,
+    loss_db = float(deygout_loss_db(heights_eff, dist, h_tx_m, h_rx_m,
                                     freq_hz, max_edges=max_edges))
     # Dominant edge geometry (same construction as deygout_loss_db's
     # top-level pass): height above the Tx-Rx line, max-nu point.
     los_line = tx_e + (rx_e - tx_e) * (dist / d_ground)
-    hsub = np.asarray(heights, dtype=float) - los_line
+    hsub = np.asarray(heights_eff, dtype=float) - los_line
     d1_all = np.asarray(dist, dtype=float)
     d2_all = d_ground - d1_all
     interior = slice(1, len(dist) - 1)
@@ -205,6 +249,24 @@ def link_taps(
     d1, d2 = float(d1_all[k_dom]), float(d_ground - d1_all[k_dom])
     excess_m = (np.hypot(d1, h_dom) + np.hypot(d2, h_dom)) - (d1 + d2)
     g_diff = 10.0 ** (-loss_db / 20.0) * np.exp(-1j * k * excess_m)
+
+    # Antenna weighting of the diffracted ray: it launches UP toward the
+    # dominant edge (not along the blocked geometric direct line). Weight by
+    # the pattern gain toward the edge relative to the direct direction the
+    # global EIRP/Rx-gain already assume -- so a downtilted mast that
+    # under-illuminates a crater rim above it loses NLOS coverage.
+    w_diff = 1.0
+    if tx_pattern is not None or rx_pattern is not None:
+        from ..antenna.geometry import ray_pattern_weight
+        edge_elev = float(los_line[k_dom] + h_dom)
+        el_tx_ray = np.degrees(np.arctan2(edge_elev - tx_e, max(d1, 1e-9)))
+        el_rx_ray = np.degrees(np.arctan2(edge_elev - rx_e, max(d2, 1e-9)))
+        el_tx_ref = np.degrees(np.arctan2(rx_e - tx_e, d_ground))
+        el_rx_ref = np.degrees(np.arctan2(tx_e - rx_e, d_ground))
+        w_diff = float(ray_pattern_weight(el_tx_ref, el_rx_ref,
+                                          el_tx_ray, el_rx_ray,
+                                          tx_pattern, rx_pattern))
+    g_diff = w_diff * g_diff
     return LinkTaps(
         delays_s=np.array([excess_m / _C]),
         gains=np.array([complex(g_diff)]),
@@ -214,7 +276,8 @@ def link_taps(
               "deygout_loss_db": loss_db,
               "dominant_edge_height_m": h_dom,
               "dominant_edge_nu": float(nus[k_dom - 1]),
-              "dominant_edge_d1_m": d1},
+              "dominant_edge_d1_m": d1,
+              "antenna_weight": w_diff},
     )
 
 
