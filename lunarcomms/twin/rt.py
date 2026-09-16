@@ -8,11 +8,12 @@ Here the mesh is terrain (twin.mesh) and the material is regolith
 (twin.materials). The Sionna calls are isolated in :meth:`LunarTwin.load` and
 :meth:`LunarTwin.link_cir`; everything else runs without Sionna.
 
-SCAFFOLD NOTE: the ray-trace path is written against the Sionna RT API
-(``load_scene`` / ``compute_paths`` / ``paths.cir``) but is unverified here --
-Sionna needs a GPU/TensorFlow install and the API drifts across 0.19/1.0, so
-validate :meth:`load` / :meth:`link_cir` against your Sionna version. The mesh,
-material, scene-XML, and CIR->LinkTaps conversion below are exercised by tests.
+STATUS: the CIR->LinkTaps->LCHEM seam is validated against sionna-rt 2.1.0 on
+an A100 (Sionna PathSolver over a built-in scene -> sionna_cir_to_linktaps ->
+lchem.to_lchem_pdp). :meth:`link_cir` targets the Sionna RT 1.x/2.x PathSolver
+API. Loading a custom LOLA-terrain mesh (:meth:`build` -> :meth:`load`) may need
+the scene XML adapted to your Sionna version's radio-material format; the mesh,
+material, scene-XML writer, and CIR conversion are exercised by tests.
 """
 
 from __future__ import annotations
@@ -120,20 +121,32 @@ class LunarTwin:
 
     def link_cir(self, tx_xyz, rx_xyz, max_depth: int = 3,
                  diffraction: bool = True, scattering: bool = False):
-        """Ray trace one Tx->Rx link -> (a, tau). Requires :meth:`load` (lazy)."""
-        from sionna.rt import Receiver, Transmitter
+        """Ray trace one Tx->Rx link -> (a, tau). Requires :meth:`load` (lazy).
+
+        Uses the Sionna RT 1.x/2.x ``PathSolver`` (validated against sionna-rt
+        2.1.0). ``diffraction`` enables both wedge and edge diffraction;
+        ``scattering`` enables diffuse reflection.
+        """
+        from sionna.rt import PathSolver, Receiver, Transmitter
         if self.scene is None:
             raise RuntimeError("call load(freq_hz) first")
-        for name in ("tx", "rx"):
-            if name in self.scene.transmitters or name in self.scene.receivers:
-                self.scene.remove(name)
+        try:                                    # replace any prior endpoints
+            self.scene.remove("tx")
+            self.scene.remove("rx")
+        except Exception:
+            pass
         self.scene.add(Transmitter("tx", position=list(map(float, tx_xyz))))
         self.scene.add(Receiver("rx", position=list(map(float, rx_xyz))))
-        paths = self.scene.compute_paths(max_depth=max_depth,
-                                         diffraction=diffraction,
-                                         scattering=scattering)
-        a, tau = paths.cir()
-        return np.array(a).ravel(), np.array(tau).ravel()
+        paths = PathSolver()(self.scene, max_depth=max_depth, los=True,
+                             specular_reflection=True, diffraction=diffraction,
+                             edge_diffraction=diffraction,
+                             diffuse_reflection=scattering)
+        a, tau = paths.cir(out_type="numpy", normalize_delays=False)
+        a = np.asarray(a)
+        tau = np.asarray(tau)
+        if a.ndim and a.shape[-1] == 1:         # drop the num_time_steps axis
+            a = a[..., 0]
+        return a.ravel(), tau.ravel()
 
     def link_taps(self, tx_xyz, rx_xyz, freq_hz: float, **kw) -> LinkTaps:
         """Ray-traced LinkTaps for one link (feeds lchem.to_lchem_pdp)."""
