@@ -26,22 +26,25 @@ from ..export.taps import LinkTaps
 from .mesh import R_MOON_M, dem_to_mesh, write_ply
 
 _C = 299792458.0
+# Sionna requires the shape's BSDF to carry an id that follows its radio-material
+# naming (an itu_* built-in), which we override with the regolith RadioMaterial
+# in load(). Validated against sionna-rt 2.1.0.
 _MITSUBA_SCENE = """<scene version="2.1.0">
-  <integrator type="path"/>
   <shape type="ply" id="terrain">
     <string name="filename" value="{ply}"/>
-    <bsdf type="diffuse"/>
+    <bsdf type="diffuse" id="{material_id}"/>
   </shape>
 </scene>
 """
 
 
-def write_mitsuba_scene(ply_filename: str, out_xml: str) -> None:
-    """Minimal Mitsuba/Sionna scene XML referencing the terrain PLY. The radio
-    material is assigned in Python at :meth:`LunarTwin.load` (scaffold: adjust
-    to your Sionna scene template if it expects named BSDF materials)."""
+def write_mitsuba_scene(ply_filename: str, out_xml: str,
+                        material_id: str = "itu_concrete") -> None:
+    """Minimal Sionna-loadable scene XML referencing the terrain PLY. The BSDF
+    id is a built-in ITU placeholder so ``load_scene`` accepts it;
+    :meth:`LunarTwin.load` then overrides it with the regolith RadioMaterial."""
     with open(out_xml, "w") as f:
-        f.write(_MITSUBA_SCENE.format(ply=ply_filename))
+        f.write(_MITSUBA_SCENE.format(ply=ply_filename, material_id=material_id))
 
 
 def sionna_cir_to_linktaps(a, tau, freq_hz: float, meta: dict | None = None,
