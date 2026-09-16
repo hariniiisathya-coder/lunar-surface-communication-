@@ -16,3 +16,4 @@ examples/*.png
 data/
 examples/*.csv
 examples/*.json
+examples/twin_*/
