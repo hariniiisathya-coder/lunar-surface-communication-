@@ -8,6 +8,7 @@ Modules
 friis          : Free-space path loss (Friis transmission equation).
 two_ray        : Two-ray ground reflection model over flat lunar regolith.
 diffraction    : ITU-R P.526-15 multi-edge knife-edge diffraction (Deygout method).
+roughness      : Coherent-reflection reduction over a rough surface (Ament).
 
 Usage
 -----
@@ -15,6 +16,6 @@ Usage
 >>> pl = two_ray.path_loss_db(5000, h_tx=30, h_rx=2, freq_hz=2.5e9)
 """
 
-from . import diffraction, friis, two_ray
+from . import diffraction, friis, roughness, two_ray
 
-__all__ = ["friis", "two_ray", "diffraction"]
+__all__ = ["friis", "two_ray", "diffraction", "roughness"]

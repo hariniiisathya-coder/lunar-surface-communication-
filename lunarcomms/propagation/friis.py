@@ -31,7 +31,7 @@ check before adding the two-ray correction.
 
 import numpy as np
 
-_C = 2.998e8  # speed of light, m/s
+_C = 299792458.0  # speed of light, m/s (CODATA; unified across the package)
 
 
 def fspl_db(
