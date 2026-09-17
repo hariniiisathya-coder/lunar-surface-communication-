@@ -13,7 +13,14 @@ import numpy as np
 _C = 299792458.0  # m/s
 
 TAN_DELTA_CEILING = 0.05
-_BASELINE_A = -3.79
+# Siegler et al. (2020) full published form (their global parameterization):
+#     tan d = 10 ** ( 0.312*rho + f**0.069 - 3.79 )      (f in GHz)
+# The density term 0.312*rho belongs in the exponent. The per-location a'/b'
+# maps (loss_tangent_ab) already fold density into a', but the UNIFORM
+# baseline must apply it explicitly — omitting it (the previous -3.79 alone)
+# understates tan d by ~3x at rho=1.5 (0.0019 vs the correct 0.0055 at S-band).
+_S20_CONST = -3.79
+_S20_DENSITY_COEF = 0.312
 _BASELINE_B = 0.069
 
 
@@ -40,10 +47,17 @@ def loss_tangent_ab(a_prime, b_prime, freq_ghz, clamp=True):
 
 def loss_tangent(rho, freq_ghz):
     """UNIFORM baseline loss tangent (no spatial variation).
-    tan d = 10 ** ( a_base + f ** b_base ). rho accepted for signature
-    compatibility but not used (density embedded in coefficients).
+
+    Full Siegler (2020) published form:
+        tan d = 10 ** ( 0.312*rho + f**0.069 - 3.79 )    (f in GHz)
+    At rho=1.50, f=2.5 GHz: tan d = 0.00554.
+
+    (Previous revision dropped the 0.312*rho density term, understating
+    tan d ~3x; the spatial a'/b' path was always correct since density is
+    folded into the per-location a'.)
     """
-    td = loss_tangent_ab(_BASELINE_A, _BASELINE_B, freq_ghz)
+    a_eff = _S20_CONST + _S20_DENSITY_COEF * float(rho)
+    td = loss_tangent_ab(a_eff, _BASELINE_B, freq_ghz)
     return float(td) if np.ndim(td) == 0 else td
 
 

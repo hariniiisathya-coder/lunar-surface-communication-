@@ -9,6 +9,7 @@ Expected values are anchored to PRIMARY SOURCES:
     against Siegler Figure 8 integrated-loss maps to ~5%.
 """
 import numpy as np
+
 from lunarcomms.regolith import dielectric
 
 S20_TABLE1 = {

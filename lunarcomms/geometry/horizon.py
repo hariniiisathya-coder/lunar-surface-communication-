@@ -35,33 +35,51 @@ Public DEM product:
 import numpy as np
 from scipy.ndimage import map_coordinates
 
+#: Mean lunar radius (m), MOON_ME / DE440 (IAU 2015).
+R_MOON_M = 1_737_400.0
+
+
+def curvature_drop_m(dist_from_tx_m, total_m, planet_radius_m=R_MOON_M):
+    """Height a point on the sphere sits below the flat Tx-Rx chord (m).
+
+        b(d1) = d1 * d2 / (2 R),   d2 = total - d1
+
+    Zero at both endpoints, maximal at the midpoint. Adding b to the terrain
+    profile (equivalently subtracting from clearance) turns the flat-Earth LOS
+    test into a spherical-Moon one. At 20 km, b_max ~ 115 m -- larger than a
+    30 m mast, so ignoring it falsely reports LOS beyond the ~10 km horizon.
+    """
+    d1 = np.asarray(dist_from_tx_m, dtype=float)
+    d2 = np.asarray(total_m, dtype=float) - d1
+    return d1 * d2 / (2.0 * float(planet_radius_m))
+
 
 def compute_horizon_angles(
     dem: np.ndarray,
     pixel_size_m: float,
     n_azimuths: int = 360,
+    max_radius_m: float | None = None,
+    observer_height_m: float = 0.0,
+    curvature: bool = True,
+    planet_radius_m: float = R_MOON_M,
 ) -> np.ndarray:
     """Compute horizon elevation angle in each azimuth direction for every DEM pixel.
 
-    TODO (S1, Week 4):
-        Algorithm (Mazarico 2011):
-        1. For each pixel (i, j) and each azimuth direction φ:
-           a. Cast a ray from (i, j) in direction φ.
-           b. Sample the DEM along the ray at each pixel crossing.
-           c. The horizon angle at φ is:
-                  θ_horizon(φ) = max over all sampled pixels k of:
-                      arctan((h[k] − h[i,j]) / r[k])
-              where r[k] is the horizontal distance to pixel k.
-           d. The point is in LOS for a source at azimuth φ if:
-                  θ_source < θ_horizon(φ).
+    Algorithm (Mazarico et al. 2011, doi:10.1016/j.icarus.2010.10.030):
+    for each azimuth φ, march outward in steps of one pixel and track, per
+    pixel, the running maximum of arctan((h[k] − h_obs) / r[k]). Vectorised
+    over the whole grid: each radial step is ONE map_coordinates call sampling
+    the entire DEM shifted by (k·sinφ, k·cosφ), so the cost is
+    n_azimuths × n_steps grid interpolations, not a per-pixel Python loop.
 
-        Implementation tip: use np.linspace to step along rays; interpolate
-        DEM heights at non-integer positions with scipy.ndimage.map_coordinates.
+    Rays leaving the DEM sample the edge value (mode="nearest"), which makes
+    the horizon flat beyond the tile — fine for interior pixels, conservative
+    near the border.
 
-        Validation:
-            Run on the PGDA-78 5-m DEM of the south pole.
-            Extract horizon at Connecting Ridge (~89.5°S, 222°E).
-            Should match Mazarico (2011) Fig. 5 horizon profile within ±1°.
+    Memory note: the (ny, nx, n_azimuths) float64 output is ~2.9 GB for a
+    1000×1000 tile at 360 azimuths. For coverage work on large DEMs prefer
+    los_mask_from_tx (single-Tx) or call this on a cropped tile / reduced
+    n_azimuths.
 
     Parameters
     ----------
@@ -71,16 +89,48 @@ def compute_horizon_angles(
         Ground sampling distance in metres (5 for PGDA-78).
     n_azimuths : int
         Number of azimuth directions to sample (default 360 → 1° resolution).
+    max_radius_m : float, optional
+        Maximum ray length. Default: the DEM diagonal (every pixel sees the
+        full tile).
+    observer_height_m : float
+        Observer antenna height above the local terrain (default 0 = eye at
+        the surface, the Mazarico convention).
 
     Returns
     -------
     horizon_angles : ndarray, shape (ny, nx, n_azimuths)
         Horizon elevation angle in degrees for each pixel and azimuth.
+        Negative values mean the horizon is below the local horizontal
+        (looking down off a ridge).
     """
-    raise NotImplementedError(
-        "TODO (S1, Week 4): implement vectorised horizon raycasting. "
-        "See Mazarico et al. (2011), doi:10.1016/j.icarus.2010.10.030"
-    )
+    ny, nx = dem.shape
+    if max_radius_m is None:
+        max_radius_m = float(np.hypot(ny, nx)) * pixel_size_m
+    n_steps = max(int(max_radius_m / pixel_size_m), 1)
+
+    rows0, cols0 = np.mgrid[0:ny, 0:nx]
+    h_obs = dem + observer_height_m
+
+    azimuths = np.linspace(0.0, 2.0 * np.pi, n_azimuths, endpoint=False)
+    out = np.full((ny, nx, n_azimuths), -90.0, dtype=float)
+
+    for a_idx, phi in enumerate(azimuths):
+        # Azimuth convention: 0 = grid north (-row), 90° = grid east (+col).
+        drow = -np.cos(phi)
+        dcol = np.sin(phi)
+        best = np.full((ny, nx), -np.inf)
+        for k in range(1, n_steps + 1):
+            r_m = k * pixel_size_m
+            rows = rows0 + k * drow
+            cols = cols0 + k * dcol
+            hk = map_coordinates(dem, [rows.ravel(), cols.ravel()],
+                                 order=1, mode="nearest").reshape(ny, nx)
+            dh = hk - h_obs
+            if curvature:
+                dh = dh - r_m ** 2 / (2.0 * planet_radius_m)  # sphere drop
+            np.maximum(best, np.arctan2(dh, r_m), out=best)
+        out[:, :, a_idx] = np.degrees(best)
+    return out
 
 
 def los_mask_from_tx(
@@ -90,8 +140,15 @@ def los_mask_from_tx(
     tx_col: int,
     h_tx_m: float,
     h_rx_m: float,
+    curvature: bool = True,
+    planet_radius_m: float = R_MOON_M,
 ) -> np.ndarray:
     """Boolean LOS mask: True where the transmitter can see each DEM pixel.
+
+    curvature : if True (default), add the spherical-Moon bulge
+        d1*d2/(2 R_moon) to the terrain before the clearance test, so points
+        beyond the ~10 km horizon of a 30 m mast are correctly NOT in LOS.
+        Set False for the legacy flat-Earth behaviour.
 
     TODO (S1, Week 4):
         For a Tx at (tx_row, tx_col) with antenna height h_tx_m above terrain:
@@ -146,7 +203,10 @@ def los_mask_from_tx(
                 mask[i, j] = True
                 continue
             ray = tx_h + (rx_h - tx_h) * (dist / total)
-            clearance = ray[1:-1] - heights[1:-1]
+            terrain = heights.copy()
+            if curvature:
+                terrain = terrain + curvature_drop_m(dist, total, planet_radius_m)
+            clearance = ray[1:-1] - terrain[1:-1]
             mask[i, j] = bool(np.all(clearance >= 0))
     return mask
 

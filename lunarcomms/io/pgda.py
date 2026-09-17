@@ -15,7 +15,6 @@ Siegler map format (verified against the Zenodo files)
   * a' is NEGATIVE (~ -4.56..0); b' ranges ~ -1.19..+0.18.
   * VALIDATED loss-tangent form: tan d = 10**(a' + f**b')  (see dielectric.py).
 """
-from pathlib import Path
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
