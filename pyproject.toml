@@ -46,8 +46,9 @@ dev = [
   "notebook>=7.0",
 ]
 sionna = [
-  "sionna>=0.19",
-  "tensorflow>=2.13",
+  # LunarTwin ray-tracing (twin/rt.py). Validated with sionna-rt 2.1.0 +
+  # mitsuba 3.9.1 + drjit 1.5.0 on an A100 (CUDA backend); no TensorFlow.
+  "sionna-rt>=1.0",
 ]
 
 [project.urls]
