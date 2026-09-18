@@ -123,12 +123,21 @@ class LunarTwin:
         return scene
 
     def link_cir(self, tx_xyz, rx_xyz, max_depth: int = 3,
-                 diffraction: bool = True, scattering: bool = False):
+                 diffraction: bool = True, scattering: bool = False,
+                 refraction: bool = False):
         """Ray trace one Tx->Rx link -> (a, tau). Requires :meth:`load` (lazy).
 
         Uses the Sionna RT 1.x/2.x ``PathSolver`` (validated against sionna-rt
         2.1.0). ``diffraction`` enables both wedge and edge diffraction;
         ``scattering`` enables diffuse reflection.
+
+        ``refraction`` is False by default and MUST stay False for a terrain
+        DEM: the mesh is a zero-thickness surface, so Sionna's refraction
+        transmits through the ground with a single-interface loss instead of
+        kilometres of regolith -- unphysically filling shadows (it inflated a
+        Connecting Ridge coverage estimate from 14% to 79%). Sionna's edge
+        diffraction itself matches ITU-R P.526 J(nu) to <0.5 dB (calibrated), so
+        with refraction off it agrees with the analytic model at a single edge.
         """
         from sionna.rt import PathSolver, Receiver, Transmitter
         if self.scene is None:
@@ -143,7 +152,7 @@ class LunarTwin:
         paths = PathSolver()(self.scene, max_depth=max_depth, los=True,
                              specular_reflection=True, diffraction=diffraction,
                              edge_diffraction=diffraction,
-                             diffuse_reflection=scattering)
+                             diffuse_reflection=scattering, refraction=refraction)
         a, tau = paths.cir(out_type="numpy", normalize_delays=False)
         a = np.asarray(a)
         tau = np.asarray(tau)
