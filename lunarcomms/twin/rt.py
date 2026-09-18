@@ -117,6 +117,18 @@ class LunarTwin:
                                    a_prime, b_prime)
         for obj in scene.objects.values():
             obj.radio_material = mat
+        # The itu_* placeholder stays registered in scene.radio_materials after
+        # reassignment; setting scene.frequency evaluates every registered
+        # material's ITU callback, which raises outside 1-100 GHz (e.g. UHF).
+        # Disable those callbacks on the now-unused placeholders.
+        for m in scene.radio_materials.values():
+            try:
+                m.frequency_update_callback = None
+            except Exception:
+                try:
+                    m._frequency_update_callback = None
+                except Exception:
+                    pass
         scene.frequency = float(freq_hz)
         scene.tx_array = PlanarArray(num_rows=1, num_cols=1, pattern="iso",
                                      polarization="V")
