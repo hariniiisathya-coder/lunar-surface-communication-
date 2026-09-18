@@ -110,11 +110,14 @@ class LunarTwin:
         if self._xml is None:
             raise RuntimeError("call build() first")
         scene = load_scene(self._xml)
-        scene.frequency = float(freq_hz)
+        # Replace the itu_* placeholder with regolith BEFORE setting the
+        # frequency: built-in ITU materials raise outside 1-100 GHz (e.g. at
+        # UHF 442 MHz), and setting scene.frequency triggers their update.
         mat = build_radio_material("regolith", self.rho, freq_hz / 1e9,
                                    a_prime, b_prime)
         for obj in scene.objects.values():
             obj.radio_material = mat
+        scene.frequency = float(freq_hz)
         scene.tx_array = PlanarArray(num_rows=1, num_cols=1, pattern="iso",
                                      polarization="V")
         scene.rx_array = PlanarArray(num_rows=1, num_cols=1, pattern="iso",
