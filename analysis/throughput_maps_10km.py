@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LightSource
 
-from lunarcomms.geometry.horizon import extract_profile, los_mask_from_tx
+from lunarcomms.geometry.horizon import extract_profile, diffraction_profile, los_mask_from_tx
 from lunarcomms.io.pgda import load_dem
 from lunarcomms.propagation import diffraction, friis, two_ray
 
@@ -69,7 +69,7 @@ def snr_map_for_band(dem, px, tx_rc, los, freq_hz, stride, eirp_dbm, grx_dbi):
                         dh, H_TX, H_RX, freq_hz))
                 else:
                     pl = float(friis.fspl_db(d3d, freq_hz))
-                    h, dist = extract_profile(dem, tx_rc[0], tx_rc[1],
+                    h, dist = diffraction_profile(dem, tx_rc[0], tx_rc[1],
                                               i, j, px)
                     pl += float(diffraction.deygout_loss_db(
                         h, dist, H_TX, H_RX, freq_hz))

@@ -7,7 +7,7 @@ import numpy as np
 from scipy.ndimage import maximum_filter
 
 from lunarcomms.io.pgda import load_dem
-from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile
+from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile, diffraction_profile
 from lunarcomms.propagation import two_ray, friis, diffraction
 
 DEM_PATH = "data/dem/Site01/Site01_final_adj_5mpp_surf.tif"
@@ -43,7 +43,7 @@ def coverage_mask(dem, px, tx, h_tx, freq_hz, stride):
                 pl = float(two_ray.path_loss_db(dh, h_tx, H_RX, freq_hz, RHO))
             else:
                 pl = float(friis.fspl_db(d3d, freq_hz))
-                h, dist = extract_profile(dem, tx[0], tx[1], i, j, px)
+                h, dist = diffraction_profile(dem, tx[0], tx[1], i, j, px)
                 pl += float(diffraction.deygout_loss_db(h, dist, h_tx, H_RX, freq_hz))
             m = friis.link_margin_db(friis.received_power_dbm(EIRP, pl, GRX), SENS)
             if m > 0:

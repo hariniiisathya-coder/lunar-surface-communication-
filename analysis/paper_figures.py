@@ -39,7 +39,7 @@ REPO = os.path.dirname(HERE)
 PAPER_FIGS = os.environ.get("PAPER_FIGS",
                             "/Users/e.baena/lunar/lunar-coverage-planner-paper/figures")
 DATA = os.environ.get("PAPER_FIG_DATA",
-                      "/private/tmp/claude-502/-Users-e-baena/fe4c6f03-f373-44d5-8f32-c54c740eec36/scratchpad")
+                      "/Users/e.baena/lunar/lunacov-figdata")
 COL, FULL = 3.375, 7.0
 PT = 10
 INK, MUTED = "#1f1f1f", "#6b6b6b"

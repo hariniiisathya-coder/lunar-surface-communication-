@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from lunarcomms.io.pgda import load_dem
-from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile
+from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile, diffraction_profile
 from lunarcomms.propagation import two_ray, friis, diffraction
 from lunarcomms.regolith import dielectric as di
 
@@ -46,7 +46,7 @@ def run_band(dem, px, tx, freq_hz):
                 pl_t = float(two_ray.path_loss_db(dh, H_TX, H_RX, freq_hz, RHO))
             else:
                 pl_t = pl_f
-                h, dist = extract_profile(dem, tx[0], tx[1], i, j, px)
+                h, dist = diffraction_profile(dem, tx[0], tx[1], i, j, px)
                 pl_t += float(diffraction.deygout_loss_db(h, dist, H_TX, H_RX, freq_hz))
             m_t = friis.link_margin_db(friis.received_power_dbm(EIRP, pl_t, GRX), SENS)
             total += 1
