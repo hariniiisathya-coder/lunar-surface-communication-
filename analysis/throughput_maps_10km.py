@@ -159,6 +159,10 @@ def main():
         stats[name] = (cov, med)
         print(f"  {name}: coverage {cov:.1f}%, median served throughput "
               f"{med:.0f} Mbps")
+    # maps for analysis/paper_figures.py (fig "tput")
+    np.savez_compressed(args.out.replace('.png', '.npz'), dem=dem, px=px, tx=np.array(tx_rc),
+                        **{k.split()[0]: v for k, v in tputs.items()},
+                        stats=np.array([[stats[k][0], stats[k][1]] for k in tputs]))
 
     # ---- figure: hillshade + throughput per band, shared colour scale ----
     extent = [0, nx * px / 1e3, ny * px / 1e3, 0]

@@ -114,6 +114,8 @@ end
 tputEnv = max(tputMCS, [], 1);
 
 writematrix([SNRdB(:) tputEnv(:)], 'amc_throughput_curve.csv');
+writematrix([SNRdB(:) tputMCS.'], 'amc_per_mcs.csv');   % per-MCS throughput (columns: SNR, MCS1..MCSn)
+writecell([MCS(:,1) MCS(:,2)], 'amc_mcs_list.csv');
 fprintf('saved amc_throughput_curve.csv (%d points, peak %.1f Mbps)\n', ...
     numel(SNRdB), max(tputEnv));
 

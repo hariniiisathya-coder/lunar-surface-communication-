@@ -1,4 +1,4 @@
-"""Figure: LunaCov vs LunarTwin coverage at the 10 km Connecting Ridge tile.
+"""Figure: LunaCov vs LunaTwin coverage at the 10 km Connecting Ridge tile.
 (a) LunaCov served map, (b) opaque twin, (c) transmissive twin (refraction on),
 all S-band, plus (d) served fraction per band vs the strict LOS set."""
 import json
@@ -25,8 +25,8 @@ gx, gy = g[1] * px / 1e3, g[0] * px / 1e3
 
 fig = plt.figure(figsize=(13.2, 3.9))
 panels = [("(a) LunaCov (analytic)", S["luna"], res["S"]["lunacov_cov"]),
-          ("(b) LunarTwin, opaque terrain", S["twin"], res["S"]["twin_cov"]),
-          ("(c) LunarTwin, refraction on", R["twin"], res["S_refraction"]["twin_cov"])]
+          ("(b) LunaTwin, opaque terrain", S["twin"], res["S"]["twin_cov"]),
+          ("(c) LunaTwin, refraction on", R["twin"], res["S_refraction"]["twin_cov"])]
 im = None
 for k, (title, m, cov) in enumerate(panels):
     ax = fig.add_subplot(1, 4, k + 1)
@@ -51,7 +51,7 @@ los = 100 * res["los_frac"]
 tw = [100 * res[b]["twin_cov"] for b in bands]
 lc = [100 * res[b]["lunacov_cov"] for b in bands]
 ax.bar(x - w, [los] * 3, w, color="0.6", label="strict LOS set")
-ax.bar(x, tw, w, color="#1f77b4", label="LunarTwin (opaque)")
+ax.bar(x, tw, w, color="#1f77b4", label="LunaTwin (opaque)")
 ax.bar(x + w, lc, w, color="#d62728", label="LunaCov")
 ax.axhline(100 * res["S_refraction"]["twin_cov"], color="#1f77b4", ls="--", lw=1.2)
 ax.text(2.45, 100 * res["S_refraction"]["twin_cov"] + 1.5, "twin, refraction on (S)",

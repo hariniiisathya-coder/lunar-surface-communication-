@@ -1,8 +1,13 @@
 """Coverage vs EIRP over the 10 km Site01 tile, TERRAIN-AWARE (LOS mask +
 two-ray + Deygout), for three regolith permittivities, plus a no-terrain Friis
 ceiling. Path loss per pixel is computed once per permittivity; the EIRP sweep is
-a threshold on the precomputed loss. Writes coverage_vs_eirp.png (10 km).
+a threshold on the precomputed loss. Writes <out_dir>/eirp_curves.json and a
+quick-look plot. Usage: python analysis/coverage_vs_eirp_10km.py [out_dir]
 """
+import json
+import os
+import sys
+
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -73,6 +78,11 @@ def main():
         print(f"  eps={eps}: plateau {curves[eps][-1]:.1f}% at 80 dBm, "
               f"{curves[eps][i_bts]:.1f}% near BTS", flush=True)
     friis_curve = np.array([cov(pl_f_ref, e) for e in EIRP_RANGE])
+    # curves for analysis/paper_figures.py (fig "eirp"); the plot below is a quick look
+    out_dir = sys.argv[1] if len(sys.argv) > 1 else "."
+    json.dump({"eirp_dbm": EIRP_RANGE.tolist(), "friis": friis_curve.tolist(),
+               "terrain": {str(k): v.tolist() for k, v in curves.items()}},
+              open(os.path.join(out_dir, "eirp_curves.json"), "w"))
 
     fig, ax = plt.subplots(figsize=(9, 6))
     ax.plot(EIRP_RANGE, friis_curve, "k--", lw=2, label="Friis (free space, no terrain)")
@@ -91,7 +101,7 @@ def main():
     ax.set_xlim(0, 80); ax.set_ylim(0, 102); ax.grid(alpha=0.3)
     ax.legend(loc="center right", fontsize=9)
     plt.tight_layout()
-    out = "/Users/e.baena/lunar/lunar-coverage-planner-paper/figures/coverage_vs_eirp.png"
+    out = os.path.join(out_dir, "coverage_vs_eirp_quicklook.png")
     plt.savefig(out, dpi=130, bbox_inches="tight")
     print(f"\nwrote {out}", flush=True)
 
