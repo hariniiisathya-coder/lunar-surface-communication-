@@ -229,3 +229,18 @@ def extract_profile(dem, tx_row, tx_col, rx_row, rx_col, pixel_size_m,
                               mode="nearest")
     seg = np.hypot(rows - r0, cols - c0) * pixel_size_m
     return heights, seg
+
+
+def diffraction_profile(dem, tx_row, tx_col, rx_row, rx_col, pixel_size_m,
+                        curvature=True, planet_radius_m=R_MOON_M):
+    """Terrain profile Tx->Rx for the diffraction calculation.
+
+    Same as extract_profile, plus the spherical bulge d1*d2/(2R) when
+    curvature is True, so the Deygout edges see the curved surface. This is
+    the construction used by los_mask_from_tx and export.taps.link_taps.
+    """
+    heights, dist = extract_profile(dem, tx_row, tx_col, rx_row, rx_col,
+                                    pixel_size_m)
+    if curvature and dist[-1] > 0:
+        heights = heights + curvature_drop_m(dist, dist[-1], planet_radius_m)
+    return heights, dist

@@ -15,3 +15,8 @@ examples/*.png
 .venv/
 data/
 examples/*.csv
+examples/*.json
+examples/twin_*/
+examples/twin_scene/
+examples/twin_ab*.json
+examples/twin_coverage_map.npz
