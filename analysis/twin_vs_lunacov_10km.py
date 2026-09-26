@@ -1,5 +1,5 @@
 """LunarTwin vs LunaCov at the paper's standardized 10 km Connecting Ridge tile.
-Same budget as the planner (EIRP 53 dBm, Grx 2 dBi, sens -106 dBm -> offset 161 dB),
+Same budget as the planner (EIRP 53 dBm, Grx 2 dBi, sens SENS_DBM -> offset 148.8 dB),
 gNB 30 m on the tile's highest point, UE 2 m, RX grid every STEP px.
 Runs: opaque twin (refraction off) at UHF/S/Ka + transmissive twin (refraction on)
 at S-band; LunaCov on the same grid; strict LOS fraction on the same grid.
@@ -13,7 +13,8 @@ from lunarcomms.geometry.horizon import los_mask_from_tx
 BASE = "/mnt/nuwinsshared/lunacov"
 dem = np.load(f"{BASE}/data/site01_5km.npy").astype(float)
 px, STRIDE, STEP = 5.0, 3, 20
-OFF = 53.0 + 2.0 + 106.0
+from lunarcomms.coverage.defaults import SENS_DBM
+OFF = 53.0 + 2.0 - SENS_DBM
 ny, nx = dem.shape
 r0, c0 = np.unravel_index(int(np.argmax(dem)), dem.shape)
 rows, cols = list(range(0, ny, STEP)), list(range(0, nx, STEP))

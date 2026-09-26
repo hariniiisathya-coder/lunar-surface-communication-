@@ -7,13 +7,14 @@ import numpy as np
 from scipy.ndimage import maximum_filter
 
 from lunarcomms.io.pgda import load_dem
+from lunarcomms.coverage.defaults import SENS_DBM
 from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile, diffraction_profile
 from lunarcomms.propagation import two_ray, friis, diffraction
 
 DEM_PATH = "data/dem/Site01/Site01_final_adj_5mpp_surf.tif"
 CLIP_KM = 5.0
 H_RX = 2.0
-EIRP, GRX, SENS, RHO = 53.0, 2.0, -106.0, 1.50
+EIRP, GRX, SENS, RHO = 53.0, 2.0, SENS_DBM, 1.50
 FREQ = 2.5e9          # S-band
 STRIDE_MAST = 2
 STRIDE_NODE = 3       # coarser for the multi-candidate greedy

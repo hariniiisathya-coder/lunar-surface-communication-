@@ -34,6 +34,9 @@ import numpy as np
 from matplotlib.colors import LightSource
 from matplotlib.text import Text
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lunarcomms.coverage.defaults import SENS_DBM  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 PAPER_FIGS = os.environ.get("PAPER_FIGS",
@@ -287,9 +290,9 @@ def fig_its():
 
 def fig_twin():
     d = f"{DATA}/twin10km"
-    res = json.load(open(f"{d}/twin10km.json"))
+    res = json.load(open(f"{d}/twin10km_sens{SENS_DBM:g}.json"))  # analysis/twin_coverage_from_npz.py
     S = np.load(f"{d}/twin10km_S.npz"); R = np.load(f"{d}/twin10km_S_refraction.npz")
-    off, step, px = float(S["margin_offset"]), int(S["step"]), float(S["px"])
+    off, step, px = 53.0 + 2.0 - SENS_DBM, int(S["step"]), float(S["px"])
     demc = S["demc"]; n = demc.shape[0]; ext = [0, n * step * px / 1e3, n * step * px / 1e3, 0]
     shade = hillshade(demc, step * px); g = S["gnb_rc"]
     fig, axes = plt.subplots(1, 4, constrained_layout=True, gridspec_kw={"width_ratios": [1, 1, 1, 1.15]})
@@ -420,7 +423,7 @@ def fig_band():
     d = np.hypot(r - tx[0], c - tx[1]) * px
     fin = np.isfinite(maps["S"])
     f = np.array([fb for *_, fb in BANDS]); terr = [_cov(maps[b]) for b, *_ in BANDS]
-    fr = [100 * np.mean((53 + 2 - friis.fspl_db(np.maximum(d[fin], 1.0), fb * 1e9) + 106) > 0) for fb in f]
+    fr = [100 * np.mean((53 + 2 - friis.fspl_db(np.maximum(d[fin], 1.0), fb * 1e9) - SENS_DBM) > 0) for fb in f]
     fig, ax = plt.subplots(constrained_layout=True)
     ax.semilogx(f, fr, "--o", color=MUTED, label="Friis, no terrain")
     ax.semilogx(f, terr, "-o", color="#2a78d6", label="Terrain-aware")
@@ -448,7 +451,7 @@ def fig_eirp():
         ax.text(x + 1, 0.93, t, transform=ax.get_xaxis_transform(), va="top")
     ax.set_xlim(0, 80); ax.set_ylim(0, 102)
     ax.set_xlabel("EIRP (dBm)"); ax.set_ylabel("Served (%)")
-    ax.legend(loc="center left", bbox_to_anchor=(0.13, 0.52), frameon=True, framealpha=1, edgecolor="none")
+    ax.legend(loc="center right", bbox_to_anchor=(1.0, 0.6), frameon=True, framealpha=1, edgecolor="none")
     save(fig, "coverage_vs_eirp.png", COL, 2.5)
 
 

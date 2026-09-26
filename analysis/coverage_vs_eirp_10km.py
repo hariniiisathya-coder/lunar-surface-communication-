@@ -14,6 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from lunarcomms.io.pgda import load_dem
+from lunarcomms.coverage.defaults import SENS_DBM
 from lunarcomms.geometry.horizon import los_mask_from_tx, extract_profile, diffraction_profile
 from lunarcomms.propagation import two_ray, friis, diffraction
 
@@ -21,7 +22,7 @@ DEM_PATH = "data/dem/Site01/Site01_final_adj_5mpp_surf.tif"
 CLIP_KM = 5.0
 FREQ_HZ = 2.5e9
 H_TX, H_RX = 30.0, 2.0
-GRX, SENS = 2.0, -106.0
+GRX, SENS = 2.0, SENS_DBM
 STRIDE = 2
 EPS_VALUES = [2.5, 3.2, 7.0]
 EIRP_RANGE = np.arange(0, 81, 2)

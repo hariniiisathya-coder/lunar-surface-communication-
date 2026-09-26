@@ -32,6 +32,8 @@ ap.add_argument("--curv", type=int, default=1)
 ap.add_argument("--tx", default="max")
 ap.add_argument("--bands", default="S")
 ap.add_argument("--grx", type=float, default=2.0)
+ap.add_argument("--sens", type=float, default=-93.8,
+                help="receiver sensitivity (dBm); the historical runs used -106")
 ap.add_argument("--noise", type=float, default=0.0)
 ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--out", required=True)
@@ -57,7 +59,7 @@ else:
 if a.noise > 0:  # DEM error realization, BTS kept at the same pixel
     dem = dem0 + np.random.default_rng(a.seed).normal(0, a.noise, dem0.shape)
 F = {"UHF": 0.442e9, "S": 2.5e9, "Ka": 27e9}
-H_TX, H_RX, EIRP, SENS, RHO = 30.0, 2.0, 53.0, -106.0, 1.5
+H_TX, H_RX, EIRP, SENS, RHO = 30.0, 2.0, 53.0, a.sens, 1.5
 t0 = time.time()
 los = los_mask_from_tx(dem, px, tx[0], tx[1], H_TX, H_RX)
 tx_elev = dem[tx] + H_TX
