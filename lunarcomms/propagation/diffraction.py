@@ -1,16 +1,17 @@
 """
-Terrain diffraction loss -- ITU-R P.526-15 (Deygout multi-edge method).
+Terrain diffraction loss -- ITU-R P.526-16 (Deygout multi-edge method).
 Student 1 (S1) -- Week 4 implementation.
 
-Formulas verified against ITU-R P.526-15:
-  Fresnel-Kirchhoff parameter (eq. 13):
+Formulas verified against ITU-R P.526-16 (11/2025), Sec. 4.1; unchanged from
+P.526-15:
+  Fresnel-Kirchhoff parameter (eq. 26):
       nu = h * sqrt( 2/lambda * (1/d1 + 1/d2) )
-  Knife-edge loss (eq. 14, valid nu >= -0.78):
+  Knife-edge loss (eq. 31, valid nu > -0.78):
       J(nu) = 6.9 + 20*log10( sqrt((nu-0.1)**2 + 1) + nu - 0.1 )
       J(nu) = 0  for nu < -0.78
 
 NOTE: the original scaffold's worked example ("nu ~ 11.5" for a 200 m rim)
-was incorrect -- the correct value from eq. 13 is ~23.1 for a 200 m rim at
+was incorrect -- the correct value from eq. 26 is ~23.1 for a 200 m rim at
 S-band midpoint (11.5 corresponds to a ~100 m rim). The formulas here are the
 verified ITU-R ones.
 """
@@ -20,7 +21,7 @@ _C = 299792458.0  # m/s
 
 
 def fresnel_kirchhoff_parameter(h_m, d1_m, d2_m, freq_hz):
-    """ITU-R P.526-15 eq. 13 diffraction parameter nu.
+    """ITU-R P.526-16 eq. 26 diffraction parameter nu.
 
         nu = h * sqrt( 2/lambda * (1/d1 + 1/d2) ),  lambda = c/f
 
@@ -35,7 +36,7 @@ def fresnel_kirchhoff_parameter(h_m, d1_m, d2_m, freq_hz):
 
 
 def knife_edge_loss_db(nu):
-    """ITU-R P.526-15 eq. 14 knife-edge diffraction loss J(nu) in dB.
+    """ITU-R P.526-16 eq. 31 knife-edge diffraction loss J(nu) in dB.
 
         J = 0                                                nu < -0.78
         J = 6.9 + 20 log10( sqrt((nu-0.1)^2 + 1) + nu-0.1 )  otherwise

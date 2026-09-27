@@ -7,7 +7,7 @@ Modules
 -------
 friis          : Free-space path loss (Friis transmission equation).
 two_ray        : Two-ray ground reflection model over flat lunar regolith.
-diffraction    : ITU-R P.526-15 multi-edge knife-edge diffraction (Deygout method).
+diffraction    : ITU-R P.526-16 multi-edge knife-edge diffraction (Deygout method).
 roughness      : Coherent-reflection reduction over a rough surface (Ament).
 
 Usage

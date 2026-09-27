@@ -26,7 +26,7 @@ Per link the model produces at most a handful of discrete paths:
                the two-ray interference (the spatial nulls a moving rover
                experiences as time fading). Use ``collapse_below_s`` for this.
   NLOS pixel:  no direct ray; a single Deygout-diffracted path with gain
-               -J_total dB (ITU-R P.526-15) and a geometric excess delay from
+               -J_total dB (ITU-R P.526-16) and a geometric excess delay from
                the dominant edge:  sqrt(d1^2+h^2) + sqrt(d2^2+h^2) - (d1+d2),
                over c. Tens to hundreds of ns for crater-rim edges.
 
