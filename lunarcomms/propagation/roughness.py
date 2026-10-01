@@ -68,7 +68,9 @@ def specular_factor(sigma_h_m, freq_hz, grazing_angle_rad, model="ament"):
 
     Multiply the smooth-surface Fresnel Gamma by this to obtain the coherent
     reflected-field amplitude. ``model``:
-      * "ament"        -> exp(-Ra^2/2)               (Beckmann-Spizzichino)
+      * "ament"        -> exp(-Ra^2/2) = exp(-2 (k sigma_h sin(theta))^2)
+                          (Ament 1953, Proc. IRE 41(1), 142-146; also derived
+                          by Beckmann & Spizzichino 1963)
       * "miller-brown" -> exp(-Ra^2/2) I0(Ra^2/2)    (Miller-Brown-Vegh)
 
     Array-safe. sigma_h_m = 0 gives rho_s = 1 (perfectly smooth), so passing a

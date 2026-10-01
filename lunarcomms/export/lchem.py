@@ -10,7 +10,7 @@ Q1.15 complex/real coefficients. See the LCHEM user guide, sec. 3-4.
 Two hardware variants:
   * complex-16 (NOC 0x5F1A0004): <=16 complex taps, tau_max ~16.67 us
     (Dmax=4096), Doppler via host Q1.15 rotation. RECOMMENDED for LunaCov --
-    the two-ray/Deygout taps are complex and sparse (1-3 taps), so they fit
+    the two-ray/Deygout taps are complex and sparse (1-2 taps), so they fit
     with room to spare and keep the interference phase.
   * real-32   (NOC 0x5F1A0003): <=32 real taps, tau_max ~8.33 us, no Doppler.
     Magnitude-only; loses inter-tap phase. Provided for completeness.

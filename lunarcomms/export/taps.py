@@ -19,28 +19,35 @@ Per link the model produces at most a handful of discrete paths:
 
   LOS pixel:   direct ray (reference, 0 s excess delay, 0 dB) plus the ground
                reflection with complex gain  Gamma * (r1/r2) * exp(-j k dr)
-               at excess delay dr/c, dr = r2 - r1. For surface geometries
-               (h_tx=30 m, h_rx=2 m, d up to a few km) dr/c is ~0.1-2 ns —
-               BELOW any practical emulator tap resolution. The two rays
+               at excess delay dr/c, dr = r2 - r1. For h_tx = 30 m and
+               h_rx = 2 m, dr/c is 10 ns at 26 m, 1 ns at 400 m and 0.1 ns at
+               4 km, i.e. below a 10 ns emulator step beyond ~26 m. The two rays
                therefore collapse into ONE complex tap whose magnitude carries
                the two-ray interference (the spatial nulls a moving rover
                experiences as time fading). Use ``collapse_below_s`` for this.
   NLOS pixel:  no direct ray; a single Deygout-diffracted path with gain
                -J_total dB (ITU-R P.526-16) and a geometric excess delay from
                the dominant edge:  sqrt(d1^2+h^2) + sqrt(d2^2+h^2) - (d1+d2),
-               over c. Tens to hundreds of ns for crater-rim edges.
+               over c. On the 10 km Connecting Ridge / Shackleton tiles this
+               delay has a median of ~6 ns and a maximum of ~140 ns, and is
+               below 7 ns on every served NLOS link. The Deygout loss may
+               combine several edges, but they are not emitted as taps.
 
-Consequence: 1-3 taps per link. Terrestrial channels fight emulator tap
+Consequence: at most two physical rays per link (LOS: direct + reflection;
+NLOS: one diffracted tap); on a 10 ns grid, one tap except LOS links within
+~26 m of the mast. Terrestrial channels fight emulator tap
 limits; the lunar surface channel fits MCHEM's 4-tap budget with room to
 spare. Gains here are RELATIVE to the free-space direct ray at the same 3-D
 distance (E/E_direct); the absolute scale is carried separately as
 ``fspl_direct_db`` so consumers apply path loss once, globally, the way
 nrTDLChannel expects.
 
-Subsurface (Chang'E-4 stratigraphy) taps are deliberately NOT emitted at
-S-band and above: the two-way dielectric attenuation through ~12 m of
-regolith (~2-3 dB/m at 2.5 GHz) buries those echoes ~75+ dB below the direct
-ray. At UHF they become borderline-relevant; add them there if needed.
+Subsurface (Chang'E-4 stratigraphy) taps are NOT emitted. At 2.5 GHz the
+regolith absorbs ~2 dB/m (eps' = 2.66, tan d = 5.5e-3), so an echo from a
+layer 12 m deep (Feng et al. 2022: 7-16 m; density step 1.5 -> 1.8 g/cm^3,
+|Gamma|^2 = -26 dB) arrives ~76 dB below the direct ray at normal incidence
+and >100 dB below at grazing angles. At 442 MHz absorption is ~0.3 dB/m and
+the same echo is only ~30-60 dB below: add such taps there if needed.
 """
 
 from __future__ import annotations
@@ -379,7 +386,7 @@ def to_colosseum_taps(
     tap_resolution_s grid, clipped to max_delay_s. Taps landing on the same
     grid cell are complex-summed; if more than n_taps cells are occupied the
     strongest n_taps are kept. For lunar surface links this never truncates
-    (1-3 physical taps).
+    (at most 2 physical taps).
     """
     lk = link.collapsed(tap_resolution_s)
     cells: dict[int, complex] = {}

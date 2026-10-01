@@ -46,8 +46,11 @@ def curvature_drop_m(dist_from_tx_m, total_m, planet_radius_m=R_MOON_M):
 
     Zero at both endpoints, maximal at the midpoint. Adding b to the terrain
     profile (equivalently subtracting from clearance) turns the flat-Earth LOS
-    test into a spherical-Moon one. At 20 km, b_max ~ 115 m -- larger than a
-    30 m mast, so ignoring it falsely reports LOS beyond the ~10 km horizon.
+    test into a spherical-Moon one. The maximum, at mid-path, is D^2/(8R):
+    1.8, 7.2 and 28.8 m for paths of 5, 10 and 20 km. (The drop below the
+    tangent plane at the transmitter, d^2/(2R) = 7, 29 and 115 m at the same
+    ranges, is a different quantity; it exceeds a 30 m mast beyond the 10.2 km
+    horizon, which is why a flat-Moon test reports false LOS there.)
     """
     d1 = np.asarray(dist_from_tx_m, dtype=float)
     d2 = np.asarray(total_m, dtype=float) - d1

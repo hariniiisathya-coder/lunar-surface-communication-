@@ -16,7 +16,7 @@
 %        deterministic tap prediction. This is the entry point for full
 %        PDSCH/PUSCH BLER simulation with these channels.
 %
-%   The lunar surface channel is SPARSE (1-3 taps; the two-ray pair collapses
+%   The lunar surface channel is SPARSE (1-2 taps; the two-ray pair collapses
 %   into one complex tap because its excess delay is sub-nanosecond), so
 %   nrTDLChannel's Custom profile represents it exactly -- no truncation,
 %   unlike terrestrial delay profiles.

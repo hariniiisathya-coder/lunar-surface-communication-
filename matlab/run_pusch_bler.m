@@ -3,12 +3,14 @@
 %   Runs a single-layer PUSCH link-level loop (RV=0, no HARQ) over three
 %   channels and sweeps SNR, producing BLER-vs-SNR and throughput curves:
 %
-%     1. Lunar LOS      — the two-ray tap from site04_traj_S.mat (sub-ns
-%                         excess delay -> effectively one tap -> frequency
-%                         FLAT), Rician, worst-case Ka Doppler (90 Hz).
-%     2. Lunar NLOS     — a 2-edge crater-diffraction profile [0, 200 ns],
-%                         Rayleigh: the largest delay spread this terrain
-%                         model produces.
+%     1. Lunar LOS      — the path delays of the median waypoint of the
+%                         Site04 traverse (site04_traj_S.mat), equal average
+%                         gains, Rician K = 13: frequency FLAT. 90 Hz Doppler.
+%     2. Lunar NLOS     — STRESS CASE: two taps [0, 200 ns], [0, -3 dB],
+%                         Rayleigh. More dispersive than anything the terrain
+%                         model produces: an NLOS link carries ONE diffracted
+%                         tap (zero delay spread), whose excess delay on the
+%                         10 km tiles is <= ~140 ns and < 7 ns on served links.
 %     3. Terrestrial    — TDL-C, 300 ns delay spread (3GPP TR 38.901), the
 %                         standard urban contrast.
 %
