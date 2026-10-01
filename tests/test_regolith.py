@@ -4,9 +4,10 @@ Tests for lunarcomms.regolith.dielectric.
 Expected values are anchored to PRIMARY SOURCES:
   * Permittivity: eps' = 1.919**rho (Olhoeft & Strangway 1975), computed
     directly -- no digitised/approximate values.
-  * Loss tangent: the Siegler et al. (2020) form tan d = 10**(a' + f**b'),
-    with a', b' from Siegler Table 1 (regions of their Figure 10), validated
-    against Siegler Figure 8 integrated-loss maps to ~5%.
+  * Loss tangent: Siegler et al. (2020) Eq. 9, tan d = 10**(0.5473 + a' + f**b')
+    with a', b' from their Table 1 (regions of their Figure 10). The gridded
+    Zenodo a' maps already include the 0.5473 density term; the tests below
+    check that Table 1 plus that term reproduces the maps at those regions.
 """
 import numpy as np
 
@@ -58,18 +59,18 @@ class TestPermittivity:
 class TestLossTangentAB:
     def test_mare_serenitatis_sband(self):
         a, b = S20_TABLE1["Mare Serenitatis"]
-        result = float(dielectric.loss_tangent_ab(a, b, 2.5))
-        assert abs(result - 0.00378) < 0.0005, f"got {result:.5f}"
+        result = float(dielectric.loss_tangent_table1(a, b, 2.5))
+        assert abs(result - 0.01332) < 0.0002, f"got {result:.5f}"
 
     def test_mare_tranquillitatis_sband(self):
         a, b = S20_TABLE1["Mare Tranquillitatis"]
-        result = float(dielectric.loss_tangent_ab(a, b, 2.5))
-        assert abs(result - 0.00568) < 0.0005, f"got {result:.5f}"
+        result = float(dielectric.loss_tangent_table1(a, b, 2.5))
+        assert abs(result - 0.02001) < 0.0003, f"got {result:.5f}"
 
     def test_farside_highlands_sband(self):
         a, b = S20_TABLE1["Farside highlands"]
-        result = float(dielectric.loss_tangent_ab(a, b, 2.5))
-        assert abs(result - 0.00208) < 0.0005, f"got {result:.5f}"
+        result = float(dielectric.loss_tangent_table1(a, b, 2.5))
+        assert abs(result - 0.00733) < 0.0002, f"got {result:.5f}"
 
     def test_all_regions_physical_range(self):
         for name, (a, b) in S20_TABLE1.items():
@@ -150,3 +151,37 @@ class TestFresnelCoefficients:
         for theta in angles:
             _, gh = dielectric.fresnel_coefficients(1.50, 2.5, theta)
             assert gh.real < 0
+
+
+# ---- gridded Siegler maps (Zenodo 10.5281/zenodo.3993798), if downloaded ----
+import os
+
+import pytest
+
+_MAPS = os.path.join(os.path.dirname(__file__), "..", "data", "siegler")
+_A, _B = os.path.join(_MAPS, "a_prime.txt"), os.path.join(_MAPS, "b_prime.txt")
+needs_maps = pytest.mark.skipif(not (os.path.exists(_A) and os.path.exists(_B)),
+                                reason="Siegler a'/b' maps not downloaded")
+
+# region centres in degrees east (Table 1 regions of Siegler Fig. 10, and two
+# well-known maria for the longitude-convention check)
+_REGIONS = {"Mare Serenitatis": (28.0, 17.5), "Mare Tranquillitatis": (8.5, 31.4)}
+
+
+def _map_a(lat, lon):
+    from lunarcomms.io.pgda import sample_loss_tangent_params
+    return float(sample_loss_tangent_params(lat, lon, _A, _B)[0])
+
+
+@needs_maps
+def test_table1_plus_density_term_matches_maps():
+    for name, (lat, lon) in _REGIONS.items():
+        a1 = S20_TABLE1[name][0] + dielectric.S20_EQ9_DENSITY_TERM
+        assert abs(_map_a(lat, lon) - a1) < 0.15, name
+
+
+@needs_maps
+def test_longitude_convention_maria_lossier_than_farside_highlands():
+    maria = [_map_a(8.5, 31.4), _map_a(32.8, -15.6), _map_a(18.0, -57.0)]
+    farside = [_map_a(0.0, 180.0), _map_a(20.0, 150.0)]
+    assert min(maria) > max(farside) + 0.2

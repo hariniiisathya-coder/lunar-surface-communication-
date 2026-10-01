@@ -75,13 +75,17 @@ def load_siegler_map(path):
     """Load one Siegler raster .txt -> (values 720x1438, lats, lons).
 
     lats descend from ~+89.875 to ~-89.875 (row 0 = north). lons are cell
-    centres spanning 360 deg.
+    centres spanning 360 deg, with column 0 at 180 deg W (lons from -180 to
+    +180 deg east). This is the convention under which the maria (Imbrium,
+    Procellarum, Tranquillitatis, Serenitatis) show the higher loss reported by
+    Siegler et al. (2020, Fig. 11) and the far-side highlands the lower one; the
+    previous 0-360 deg reading placed the high-loss belt on the far side.
     """
     raw = np.loadtxt(str(path))
     vals = _strip_sentinels(raw)
     n_lat, n_lon = vals.shape
     lats = 90.0 - (np.arange(n_lat) + 0.5) * _DEG_PER_PIX
-    lons = (np.arange(n_lon) + 0.5) * (360.0 / n_lon)
+    lons = -180.0 + (np.arange(n_lon) + 0.5) * (360.0 / n_lon)
     return vals, lats, lons
 
 

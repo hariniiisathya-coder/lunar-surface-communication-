@@ -147,42 +147,65 @@ def fig_validation():
     c.text(thb + 1.5, 0.97, f"{thb:.0f}$^\\circ$", transform=c.get_xaxis_transform(), va="top")
     c.set_xlabel("Grazing angle (deg)"); c.set_ylabel(r"$|\Gamma|$"); c.set_ylim(0, 1.05)
     c.set_title("(c) Fresnel reflection"); c.legend(loc="upper right", **leg)
-    # (d) loss tangent
+    # (d) loss tangent: Siegler et al. (2020). Table 1 regions use Eq. 9,
+    # tan d = 10**(0.5473 + a' + f**b'); the curve used is the highland form
+    # (Eq. 11, Table 3) at rho = 1.5; the polar-cap curve is the median of the
+    # gridded a', b' maps poleward of 89 deg S.
+    from lunarcomms.io.pgda import load_siegler_map
     f = np.logspace(np.log10(0.3), np.log10(40.0), 400)
-    d.loglog(f, di.loss_tangent(RHO, f), lw=1.8, color="#2a78d6", label="Siegler model (used)")
-    d.loglog(f, di.loss_tangent_ab(-3.79, 0.069, f), "--", color=MUTED, label="No density term")
-    pub = {"Mare Tranq.": (-3.208, -0.0422, 0.00568, "#e34948"),
-           "Mare Seren.": (-3.351, -0.0811, 0.00378, "#eda100"),
-           "Farside highl.": (-3.745, 0.0663, 0.00208, "#4a3aa7")}
-    for name, (aa, bb, td, col) in pub.items():
-        d.loglog(f, di.loss_tangent_ab(aa, bb, f), lw=0.7, color=col, alpha=0.6)
+    av, la, _ = load_siegler_map(f"{REPO}/data/siegler/a_prime.txt")
+    bv, _, _ = load_siegler_map(f"{REPO}/data/siegler/b_prime.txt")
+    cap = la <= -89.0
+    a_cap, b_cap = float(np.nanmedian(av[cap])), float(np.nanmedian(bv[cap]))
+    d.loglog(f, di.loss_tangent(RHO, f), lw=1.8, color="#2a78d6", label=r"Highland form, $\rho=1.5$ (used)")
+    d.loglog(f, di.loss_tangent_ab(a_cap, b_cap, f), lw=1.4, color="#1baf7a", ls=(0, (5, 2)),
+             label=r"Polar cap ($>89^\circ$S) median")
+    d.loglog(f, di.loss_tangent_ab(-3.79, 0.069, f), ":", color=MUTED, lw=1.6, label="No density term")
+    pub = {"Mare Tranq.": (-3.208, -0.0422, "#e34948"),
+           "Mare Seren.": (-3.351, -0.0811, "#eda100"),
+           "Farside highl.": (-3.745, 0.0663, "#4a3aa7")}
+    for name, (aa, bb, col) in pub.items():
+        d.loglog(f, di.loss_tangent_table1(aa, bb, f), lw=0.7, color=col, alpha=0.6)
+        td = float(di.loss_tangent_table1(aa, bb, 2.5))
         d.plot(2.5, td, "o", ms=5, color=col)
         d.annotate(name, (2.5, td), textcoords="offset points", xytext=(-6, 0), ha="right", va="center")
     d.set_xlabel("Frequency (GHz)"); d.set_ylabel(r"$\tan\delta$")
-    d.set_ylim(1.0e-3, 1.2e-2)
+    d.set_ylim(4.0e-4, 4.0e-2)
     d.set_title("(d) Loss tangent"); d.legend(loc="lower right", **leg)
     save(fig, "validation_baselines.png", FULL, 5.4)
 
 
 def fig_regolith():
+    """Site-specific minus uniform two-ray loss at Shackleton (Site04). Solid: the
+    Siegler map value at the site; thin dashed: the lowest and highest loss
+    tangent found around the polar ring at the site latitude, where the gridded
+    maps vary by about a factor of 7."""
     from lunarcomms import bands
     from lunarcomms.io.pgda import sample_loss_tangent_params
     from lunarcomms.propagation import two_ray
+    from lunarcomms.regolith import dielectric as di
     sys.path.insert(0, os.path.join(REPO, "examples"))
     from variable_regolith_pgda import site_latlon
     dem = f"{REPO}/data/dem/Site04/Site04_final_adj_5mpp_surf.tif"
+    A, B = f"{REPO}/data/siegler/a_prime.txt", f"{REPO}/data/siegler/b_prime.txt"
     lat, lon = site_latlon(dem)
-    ap, bp = map(float, sample_loss_tangent_params(lat, lon, f"{REPO}/data/siegler/a_prime.txt",
-                                                  f"{REPO}/data/siegler/b_prime.txt"))
+    ap, bp = map(float, sample_loss_tangent_params(lat, lon, A, B))
+    ring = [tuple(map(float, sample_loss_tangent_params(lat, l, A, B))) for l in np.arange(0, 360, 5)]
+    td = [float(di.loss_tangent_ab(x, y, 2.5)) for x, y in ring]
+    lo, hi = ring[int(np.argmin(td))], ring[int(np.argmax(td))]
     d = np.linspace(40, 3000, 400)
     fig, ax = plt.subplots(constrained_layout=True)
     for nm in ("UHF", "S"):
         f = bands.freq_hz(nm)
-        ax.plot(d / 1e3, two_ray.path_loss_spatial_db(d, 30.0, 2.0, f, ap, bp)
-                - two_ray.path_loss_db(d, 30.0, 2.0, f), color=BANDC[nm], label=nm)
+        ref = two_ray.path_loss_db(d, 30.0, 2.0, f)
+        ax.plot(d / 1e3, two_ray.path_loss_spatial_db(d, 30.0, 2.0, f, ap, bp) - ref,
+                color=BANDC[nm], label=f"{nm}, site")
+        for k, (a_, b_) in enumerate((lo, hi)):
+            ax.plot(d / 1e3, two_ray.path_loss_spatial_db(d, 30.0, 2.0, f, a_, b_) - ref,
+                    color=BANDC[nm], lw=0.8, ls="--", label=f"{nm}, ring min/max" if k == 0 else None)
     ax.axhline(0, color=MUTED, lw=0.8)
     ax.set_xlabel("Distance (km)"); ax.set_ylabel("Path-loss difference (dB)")
-    ax.legend(title="Site-specific minus uniform", loc="lower right")
+    ax.legend(loc="upper right", handlelength=1.6)
     save(fig, "regolith_Site04_final_adj_5mpp_surf.png", COL, 2.5)
 
 

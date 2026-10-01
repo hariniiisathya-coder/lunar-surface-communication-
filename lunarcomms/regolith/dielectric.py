@@ -31,10 +31,19 @@ def permittivity(rho):
     return 1.919 ** rho
 
 
+# Siegler et al. (2020), Eq. 9: the depth-integrated loss tangent is
+# tan d = 10**(0.5473 + a' + f**b'). The a', b' values of their Table 1 exclude
+# the 0.5473 density term; the gridded a' maps (Zenodo 10.5281/zenodo.3993798,
+# "Figure 11") already include it.
+S20_EQ9_DENSITY_TERM = 0.5473
+
+
 def loss_tangent_ab(a_prime, b_prime, freq_ghz, clamp=True):
-    """VERIFIED Siegler (2020) loss tangent from per-location a', b'.
+    """Siegler (2020) loss tangent from per-location a', b'.
         tan d(f) = 10 ** ( a' + f ** b' )     (f in GHz)
-    Array-safe in all arguments. Density already folded into a'/b'.
+    Array-safe in all arguments. Use with the gridded a', b' maps, whose a'
+    already contains the density term; for the Table 1 values of the paper use
+    loss_tangent_table1().
     """
     a_prime = np.asarray(a_prime, dtype=float)
     b_prime = np.asarray(b_prime, dtype=float)
@@ -45,6 +54,14 @@ def loss_tangent_ab(a_prime, b_prime, freq_ghz, clamp=True):
     return td
 
 
+def loss_tangent_table1(a_prime, b_prime, freq_ghz):
+    """Loss tangent from a Siegler (2020) Table 1 pair (Eq. 9):
+        tan d = 10 ** ( 0.5473 + a' + f ** b' ).
+    """
+    return loss_tangent_ab(S20_EQ9_DENSITY_TERM + np.asarray(a_prime, dtype=float),
+                           b_prime, freq_ghz)
+
+
 def loss_tangent(rho, freq_ghz):
     """UNIFORM baseline loss tangent (no spatial variation).
 
@@ -52,9 +69,8 @@ def loss_tangent(rho, freq_ghz):
         tan d = 10 ** ( 0.312*rho + f**0.069 - 3.79 )    (f in GHz)
     At rho=1.50, f=2.5 GHz: tan d = 0.00554.
 
-    (Previous revision dropped the 0.312*rho density term, understating
-    tan d ~3x; the spatial a'/b' path was always correct since density is
-    folded into the per-location a'.)
+    This is the generalized highland form of Siegler et al. (2020), Eq. 11
+    with Table 3 (a = -3.79, b = 0.069, density coefficient 0.312).
     """
     a_eff = _S20_CONST + _S20_DENSITY_COEF * float(rho)
     td = loss_tangent_ab(a_eff, _BASELINE_B, freq_ghz)
